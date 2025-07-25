@@ -1,7 +1,9 @@
 // frontend/src/services/api.js
 import axios from 'axios';
 
-const API = axios.create({ baseURL: 'http://localhost:5000/api' });
+const API = axios.create({ 
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api' 
+});
 
 // Add JWT to every request if user is logged in
 API.interceptors.request.use((req) => {

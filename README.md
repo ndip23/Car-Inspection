@@ -1,3 +1,6 @@
+# Car-Inspection
+Built using mern stacl in order to manage a car inspection company
+
 # Car Inspection Management System (MERN Stack with CRA)
 
 This is a full-stack Car Inspection Management System built with MongoDB, Express.js, Node.js, and **Create React App**. It features a futuristic, HUD-style user interface.

@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "react-datepicker/dist/react-datepicker.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-light-bg text-light-text;
+    @apply transition-colors duration-300;
+  }
+  .dark body {
+    @apply bg-dark-bg text-dark-text;
+  }
+}
+
+/* Reusable Glassmorphism Card Style */
+@layer components {
+  .glass-card {
+    @apply shadow-glass backdrop-blur-md;
+    /* Light Mode */
+    @apply bg-light-card/60 border border-light-card/30;
+    /* Dark Mode */
+    @apply dark:bg-dark-card/60 dark:border-dark-card/30;
+  }
+}

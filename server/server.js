@@ -3,6 +3,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
+import checkLicense from './middleware/licenseMiddleware.js';
 
 // --- MAIN STARTUP FUNCTION ---
 const startServer = async () => {
@@ -43,6 +44,7 @@ const startServer = async () => {
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/reports', reportRoutes);
     app.use('/api/settings', settingRoutes);
+    app.use(checkLicense);
 
     // Step 7: Configure error handling middleware.
     app.use((err, req, res, next) => {

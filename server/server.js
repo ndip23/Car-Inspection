@@ -3,7 +3,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
-import checkLicense from './middleware/licenseMiddleware.js';
+//import checkLicense from './middleware/licenseMiddleware.js';
 
 // --- MAIN STARTUP FUNCTION ---
 const startServer = async () => {

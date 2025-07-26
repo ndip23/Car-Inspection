@@ -2,12 +2,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiLogIn, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'; // Import eye icons
+import { FiLogIn, FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 
 const Login = () => {
-  const [email, setEmail] = useState('inspector@test.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // State for password visibility
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -18,8 +18,19 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/');
+      // The login function now returns the user data upon success
+      const loggedInUser = await login(email, password); 
+
+      // --- THIS IS THE NEW REDIRECT LOGIC ---
+      if (loggedInUser.email === process.env.REACT_APP_DEV_EMAIL) {
+        // If the logged-in user is the developer, go straight to the dev panel
+        navigate('/developer-panel');
+      } else {
+        // Otherwise, go to the regular inspector/admin dashboard
+        navigate('/');
+      }
+      // ------------------------------------
+
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to log in. Please check your credentials.');
     } finally {
@@ -37,28 +48,12 @@ const Login = () => {
             <form className="space-y-6" onSubmit={handleSubmit}>
                 <div className="relative">
                     <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-light-text-secondary dark:text-dark-text-secondary" />
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 bg-light-bg/50 dark:bg-dark-bg/50 border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="Email Address"
-                    />
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-light-bg/50 dark:bg-dark-bg/50 border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Email Address" />
                 </div>
-                {/* MODIFIED: Password input with visibility toggle */}
                 <div className="relative">
                     <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-light-text-secondary dark:text-dark-text-secondary" />
-                    <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full pl-10 pr-10 py-3 bg-light-bg/50 dark:bg-dark-bg/50 border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                        placeholder="Password"
-                    />
-                    <div
-                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-light-text-secondary dark:text-dark-text-secondary"
-                        onClick={() => setShowPassword(!showPassword)}
-                    >
+                    <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-10 pr-10 py-3 bg-light-bg/50 dark:bg-dark-bg/50 border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Password"/>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-light-text-secondary dark:text-dark-text-secondary" onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? <FiEyeOff /> : <FiEye />}
                     </div>
                 </div>

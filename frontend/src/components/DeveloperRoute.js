@@ -1,25 +1,20 @@
 // frontend/src/components/DeveloperRoute.js
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useDeveloperAuth } from '../context/DeveloperAuthContext';
-import DeveloperLogin from '../pages/DeveloperLogin';
 
 const DeveloperRoute = () => {
     const { user } = useAuth();
-    const { isDevAuthenticated } = useDeveloperAuth();
     const devEmail = process.env.REACT_APP_DEV_EMAIL;
-    const location = useLocation();
 
-    // Condition 1: Must be the correct user
+    // This guard now has one simple job:
+    // If you are not the developer, you cannot access this route at all.
     if (!user || !devEmail || user.email !== devEmail) {
         return <Navigate to="/" replace />;
     }
-    if (isDevAuthenticated) {
-        return <Outlet />;
-    } else {
-        return <DeveloperLogin />;
-    }
+
+    // If you are the developer, show the content (the Developer Panel).
+    return <Outlet />;
 };
 
 export default DeveloperRoute;

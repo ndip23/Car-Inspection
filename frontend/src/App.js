@@ -4,7 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { DeveloperAuthProvider } from './context/DeveloperAuthContext';
+// REMOVED: DeveloperAuthProvider is no longer needed with this simplified logic
 import "react-datepicker/dist/react-datepicker.css";
 
 // Layouts and Route Handlers
@@ -12,7 +12,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/admin/AdminRoute';
 import AdminLayout from './components/admin/AdminLayout';
-import DeveloperRoute from './components/DeveloperRoute';
+import DeveloperRoute from './components/DeveloperRoute'; // We still use the guard
 
 // Pages
 import Login from './pages/Login';
@@ -24,16 +24,14 @@ import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import SettingsPage from './pages/SettingsPage';
 import ReportsPage from './pages/ReportsPage';
 import NotFound from './pages/NotFound';
+import DeveloperPanel from './pages/DeveloperPanel'; // Ensure this is imported
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagementPage from './pages/admin/UserManagementPage';
-//import VehicleDatabasePage from './pages/admin/VehicleDatabasePage';
+import VehicleDatabasePage from './pages/admin/VehicleDatabasePage';
 import InspectorPerformancePage from './pages/admin/InspectorPerformancePage';
 import SystemSettingsPage from './pages/admin/SystemSettingsPage';
-
-// Developer Page
-import DeveloperPanel from './pages/DeveloperPanel'; // Ensure this is imported
 
 function App() {
   const { loading } = useAuth();
@@ -47,23 +45,24 @@ function App() {
         <Route path="/register" element={<Register />} />
         
         {/* --- THIS IS THE CORRECTED DEVELOPER ROUTE --- */}
-        <Route element={<DeveloperRoute />}>
-          <Route 
-            path="/developer-panel" 
-            element={
+        {/* We wrap the entire route definition in the guard */}
+        <Route 
+          path="/developer-panel"
+          element={
+            <DeveloperRoute>
               <DashboardLayout>
                 <DeveloperPanel />
               </DashboardLayout>
-            } 
-          />
-        </Route>
+            </DeveloperRoute>
+          }
+        />
         
         {/* Admin Routes */}
         <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<UserManagementPage />} />
-                {/*<Route path="vehicles" element={<VehicleDatabasePage />} />*/}
+                <Route path="vehicles" element={<VehicleDatabasePage />} />
                 <Route path="performance" element={<InspectorPerformancePage />} />
                 <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
@@ -85,13 +84,12 @@ function App() {
   );
 }
 
+// We no longer need the DeveloperAuthProvider
 const AppWrapper = () => (
     <Router>
         <ThemeProvider>
             <AuthProvider>
-                <DeveloperAuthProvider>
-                    <App />
-                </DeveloperAuthProvider>
+                <App />
             </AuthProvider>
         </ThemeProvider>
     </Router>

@@ -2,44 +2,65 @@
 import asyncHandler from 'express-async-handler';
 import Setting from '../models/Setting.js';
 
-// ... (getSettings function remains the same)
+// @desc    Get all settings and create defaults if they don't exist
+// @route   GET /api/settings
+// @access  Private/Admin
 const getSettings = asyncHandler(async (req, res) => {
+    // --- THIS IS THE NEW, ROBUST LOGIC ---
+    // Define the keys for the settings we absolutely need.
+    const requiredKeys = ['licenseStatus', 'trialStartDate', 'smsGatewayUrl'];
+    
+    // Fetch all existing settings.
     const settingsFromDB = await Setting.find({});
-    let settingsMap = settingsFromDB.reduce((acc, setting) => {
+    
+    // Check which keys are missing from the database.
+    const existingKeys = settingsFromDB.map(s => s.key);
+    const missingKeys = requiredKeys.filter(k => !existingKeys.includes(k));
+
+    // If any keys are missing, create them now.
+    if (missingKeys.length > 0) {
+        const newSettings = missingKeys.map(key => {
+            let defaultValue;
+            switch (key) {
+                case 'licenseStatus':
+                    defaultValue = 'trial';
+                    break;
+                case 'trialStartDate':
+                    defaultValue = new Date(); // Set the trial start to now
+                    break;
+                default:
+                    defaultValue = ''; // Default for smsGatewayUrl etc.
+            }
+            return { key, value: defaultValue };
+        });
+        
+        // Insert the new default settings into the database.
+        await Setting.insertMany(newSettings);
+    }
+
+    // Refetch all settings to ensure we have a complete and consistent set.
+    const allSettings = await Setting.find({});
+    const settingsMap = allSettings.reduce((acc, setting) => {
         acc[setting.key] = setting.value;
         return acc;
     }, {});
-    const defaultSettings = {
-        licenseStatus: 'trial',
-        trialStartDate: new Date().toISOString(),
-        smsGatewayUrl: '',
-    };
-    const finalSettings = { ...defaultSettings, ...settingsMap };
-    res.json(finalSettings);
+
+    res.json(settingsMap);
 });
 
-
-// --- THIS IS THE CORRECTED FUNCTION ---
+// @desc    Update or create multiple settings at once
+// @route   PUT /api/settings
+// @access  Private/Admin
 const updateSettings = asyncHandler(async (req, res) => {
     const settingsToUpdate = req.body;
     
-    // Create an array of operations for MongoDB's bulkWrite.
-    // This is highly efficient as it performs all updates in a single database call.
-    const operations = Object.keys(settingsToUpdate).map(key => {
-        // We only want to update keys that are recognized and intended for settings.
-        // This prevents accidental data from being saved.
-        const validKeys = ['smsGatewayUrl', 'licenseStatus', 'whatsappReminder', 'emailReminderSubject', 'emailReminderBody'];
-        if (validKeys.includes(key)) {
-            return {
-                updateOne: {
-                    filter: { key: key }, // Find the setting by its unique key
-                    update: { $set: { value: settingsToUpdate[key] } }, // Set its new value
-                    upsert: true, // IMPORTANT: This creates the setting if it doesn't exist yet
-                }
-            };
+    const operations = Object.keys(settingsToUpdate).map(key => ({
+        updateOne: {
+            filter: { key: key },
+            update: { $set: { value: settingsToUpdate[key] } },
+            upsert: true,
         }
-        return null; // Ignore any unexpected keys
-    }).filter(op => op !== null); // Filter out any null operations
+    }));
 
     if (operations.length > 0) {
         await Setting.bulkWrite(operations);

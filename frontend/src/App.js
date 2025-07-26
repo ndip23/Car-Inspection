@@ -29,7 +29,7 @@ import DeveloperPanel from './pages/DeveloperPanel'; // Ensure this is imported
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserManagementPage from './pages/admin/UserManagementPage';
-import VehicleDatabasePage from './pages/admin/VehicleDatabasePage';
+//import VehicleDatabasePage from './pages/admin/VehicleDatabasePage';
 import InspectorPerformancePage from './pages/admin/InspectorPerformancePage';
 import SystemSettingsPage from './pages/admin/SystemSettingsPage';
 
@@ -62,7 +62,7 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<UserManagementPage />} />
-                <Route path="vehicles" element={<VehicleDatabasePage />} />
+                {/*<Route path="vehicles" element={<VehicleDatabasePage />} />*/}
                 <Route path="performance" element={<InspectorPerformancePage />} />
                 <Route path="settings" element={<SystemSettingsPage />} />
             </Route>

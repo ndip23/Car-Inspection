@@ -25,6 +25,8 @@ import NotFound from './pages/NotFound';
 // Developer Panel
 import DeveloperRoute from './components/DeveloperRoute'; 
 import DeveloperPanel from './pages/DeveloperPanel';
+import { DeveloperAuthProvider } from './context/DeveloperAuthContext';
+import DeveloperLogin from './pages/DeveloperLogin';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -73,5 +75,7 @@ function App() {
   );
 }
 
-const AppWrapper = () => ( <Router> <ThemeProvider> <AuthProvider> <App /> </AuthProvider> </ThemeProvider> </Router> );
+const AppWrapper = () => ( <Router> <ThemeProvider> <AuthProvider> <DeveloperAuthProvider> 
+                    <App />
+                </DeveloperAuthProvider> </AuthProvider> </ThemeProvider> </Router> );
 export default AppWrapper;

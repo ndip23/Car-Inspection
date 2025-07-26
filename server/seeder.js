@@ -10,37 +10,40 @@ connectDB();
 
 const importData = async () => {
     try {
-        // Check if the required environment variables are set
+        // Check for required environment variables
         if (!process.env.DEFAULT_ADMIN_EMAIL || !process.env.DEFAULT_ADMIN_PASSWORD || !process.env.DEFAULT_DEV_EMAIL || !process.env.DEFAULT_DEV_PASSWORD) {
-            console.error('Error: Please set DEFAULT_ADMIN_EMAIL/PASSWORD and DEFAULT_DEV_EMAIL/PASSWORD in your .env file'.red.bold);
+            console.error('Error: Please set all DEFAULT_ADMIN and DEFAULT_DEV credentials in your .env file'.red.bold);
             process.exit(1);
         }
 
-        // Clear existing users to prevent duplicates
+        // Clear all existing users
         await User.deleteMany();
+        console.log('Existing users cleared...'.yellow);
 
-        // --- UPDATED: Create an array of users ---
-        const usersToCreate = [
-            // User 1: The regular Admin
-            {
-                name: process.env.DEFAULT_ADMIN_NAME || 'Admin User',
-                email: process.env.DEFAULT_ADMIN_EMAIL,
-                password: process.env.DEFAULT_ADMIN_PASSWORD,
-                role: 'admin',
-            },
-            // User 2: The special Developer account (also an admin)
-            {
-                name: process.env.DEFAULT_DEV_NAME || 'Developer',
-                email: process.env.DEFAULT_DEV_EMAIL,
-                password: process.env.DEFAULT_DEV_PASSWORD,
-                role: 'admin', // The developer account must also be an admin to access the admin panel
-            }
-        ];
+        // --- THIS IS THE CRITICAL FIX ---
+        // We create each user individually using User.create()
+        // This ensures the pre('save') hook in the User model runs and hashes the password.
 
-        // Insert both users into the database
-        await User.insertMany(usersToCreate);
+        // Create the Admin User
+        await User.create({
+            name: process.env.DEFAULT_ADMIN_NAME || 'Admin User',
+            email: process.env.DEFAULT_ADMIN_EMAIL,
+            password: process.env.DEFAULT_ADMIN_PASSWORD,
+            role: 'admin',
+        });
+        console.log('Admin User created.'.green);
 
-        console.log('Admin and Developer users created successfully!'.green.inverse);
+        // Create the Developer User
+        await User.create({
+            name: process.env.DEFAULT_DEV_NAME || 'Developer',
+            email: process.env.DEFAULT_DEV_EMAIL,
+            password: process.env.DEFAULT_DEV_PASSWORD,
+            role: 'admin',
+        });
+        console.log('Developer User created.'.green);
+        // ------------------------------------
+
+        console.log('\nAdmin and Developer users created successfully!'.green.inverse);
         console.log('--- Admin Account ---'.cyan);
         console.log(`Email: ${process.env.DEFAULT_ADMIN_EMAIL}`.cyan);
         console.log(`Password: [set from your .env file]`.cyan);

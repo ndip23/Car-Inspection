@@ -44,7 +44,7 @@ const startServer = async () => {
     app.use('/api/notifications', notificationRoutes);
     app.use('/api/reports', reportRoutes);
     app.use('/api/settings', settingRoutes);
-    app.use(checkLicense);
+   // app.use(checkLicense);
 
     // Step 7: Configure error handling middleware.
     app.use((err, req, res, next) => {

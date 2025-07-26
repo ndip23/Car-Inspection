@@ -1,6 +1,6 @@
 // frontend/src/context/AuthContext.js
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { loginUser as apiLogin, registerUser as apiRegister } from '../services/api'; // Use aliased imports for clarity
+import { loginUser as apiLogin, registerUser as apiRegister } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -22,21 +22,43 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (email, password) => {
-        const userData = await apiLogin(email, password);
-        const userToStore = { _id: userData._id, name: userData.name, email: userData.email, role: userData.role, avatar: userData.avatar };
-        localStorage.setItem('user', JSON.stringify(userToStore));
-        localStorage.setItem('token', userData.token);
-        setUser(userToStore);
-        return userToStore; // --- IMPORTANT: Return the user data ---
+        try {
+            const userData = await apiLogin(email, password);
+            const userToStore = { 
+                _id: userData._id, 
+                name: userData.name, 
+                email: userData.email, 
+                role: userData.role, 
+                avatar: userData.avatar 
+            };
+            localStorage.setItem('user', JSON.stringify(userToStore));
+            localStorage.setItem('token', userData.token);
+            setUser(userToStore);
+            return userToStore; // Return user data on success
+        } catch (error) {
+            // If an error occurs, we re-throw it so the component can catch it.
+            // This is crucial for the UI to display the error message.
+            throw error; 
+        }
     };
 
     const register = async (name, email, password) => {
-        const userData = await apiRegister(name, email, password);
-        const userToStore = { _id: userData._id, name: userData.name, email: userData.email, role: userData.role, avatar: userData.avatar };
-        localStorage.setItem('user', JSON.stringify(userToStore));
-        localStorage.setItem('token', userData.token);
-        setUser(userToStore);
-        return userToStore;
+        try {
+            const userData = await apiRegister(name, email, password);
+            const userToStore = { 
+                _id: userData._id, 
+                name: userData.name, 
+                email: userData.email, 
+                role: userData.role, 
+                avatar: userData.avatar 
+            };
+            localStorage.setItem('user', JSON.stringify(userToStore));
+            localStorage.setItem('token', userData.token);
+            setUser(userToStore);
+            return userToStore; // Return user data on success
+        } catch (error) {
+            throw error; // Re-throw the error for the component
+        }
     };
 
     const logout = () => {
@@ -46,7 +68,13 @@ export const AuthProvider = ({ children }) => {
     };
     
     const updateUserContext = (newUserData) => {
-         const userToStore = { _id: newUserData._id, name: newUserData.name, email: newUserData.email, role: newUserData.role, avatar: newUserData.avatar };
+         const userToStore = { 
+             _id: newUserData._id, 
+             name: newUserData.name, 
+             email: newUserData.email, 
+             role: newUserData.role, 
+             avatar: newUserData.avatar 
+         };
          localStorage.setItem('user', JSON.stringify(userToStore));
          if(newUserData.token) {
              localStorage.setItem('token', newUserData.token);

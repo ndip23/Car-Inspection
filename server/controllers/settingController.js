@@ -11,6 +11,9 @@ const getSettings = asyncHandler(async (req, res) => {
         acc[setting.key] = setting.value;
         return acc;
     }, {});
+     if (!settingsMap.licenseStatus) {
+        settingsMap.licenseStatus = 'trial'; // Default to trial if not set
+    }
     res.json(settingsMap);
 });
 

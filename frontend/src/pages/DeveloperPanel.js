@@ -1,14 +1,30 @@
 // frontend/src/pages/DeveloperPanel.js
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect } from 'react';
 import { fetchSettings, updateSettings } from '../services/api';
 import toast from 'react-hot-toast';
 import { FiSave, FiZap, FiArrowLeft } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 const DeveloperPanel = () => {
+    const { user } = useAuth(); // Get the current user
+    const navigate = useNavigate(); // Hook for navigation
+
     const [settings, setSettings] = useState({ smsGatewayUrl: '', licenseStatus: 'trial' });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+
+    // --- THIS IS THE NEW SECURITY CHECK ---
+    useEffect(() => {
+        // This effect runs once when the component mounts.
+        const devEmail = process.env.REACT_APP_DEV_EMAIL;
+        if (!user || !devEmail || user.email !== devEmail) {
+            // If the user is not the developer, redirect them immediately.
+            toast.error("You are not authorized to view this page.");
+            navigate('/'); // Redirect to the main dashboard
+        }
+    }, [user, navigate]);
+    // ------------------------------------
 
     useEffect(() => {
         setLoading(true);
@@ -41,6 +57,7 @@ const DeveloperPanel = () => {
 
     if (loading) return <p>Loading Developer Panel...</p>;
 
+    // The rest of the JSX remains the same
     return (
         <div className="space-y-4 max-w-4xl mx-auto">
             <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
@@ -52,8 +69,6 @@ const DeveloperPanel = () => {
                     <FiSave /> {saving ? 'Saving...' : 'Save All Changes'}
                 </button>
             </div>
-
-             {/* SMS Gateway Configuration */}
             <div className="p-6 rounded-xl glass-card">
                 <h3 className="text-xl font-semibold mb-2">Local SMS Gateway Configuration</h3>
                 <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">
@@ -69,32 +84,19 @@ const DeveloperPanel = () => {
                     className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg"
                 />
             </div>
-
-            {/* --- REFINED LICENSE ACTIVATION SECTION --- */}
-            <div className={`p-6 rounded-xl border ${
-                settings.licenseStatus === 'trial' ? 'border-orange-500/50 bg-orange-500/10' :
-                settings.licenseStatus === 'active' ? 'border-green-500/50 bg-green-500/10' :
-                'border-red-500/50 bg-red-500/10'
-            }`}>
+            <div className={`p-6 rounded-xl border ${settings.licenseStatus === 'trial' ? 'border-orange-500/50 bg-orange-500/10' : 'border-green-500/50 bg-green-500/10'}`}>
                 <h3 className="text-xl font-semibold mb-2">Application License</h3>
                 <div className="flex items-center justify-between">
                     <div>
                         <p>Current Status: 
-                            <span className={`font-bold ml-2 ${
-                                settings.licenseStatus === 'trial' ? 'text-orange-500' :
-                                settings.licenseStatus === 'active' ? 'text-green-500' :
-                                'text-red-500'
-                            }`}>
+                            <span className={`font-bold ml-2 ${settings.licenseStatus === 'trial' ? 'text-orange-500' : 'text-green-500'}`}>
                                 {settings.licenseStatus.toUpperCase()}
                             </span>
                         </p>
                         <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                            { settings.licenseStatus === 'trial' && 'The application is in a 14-day trial period.' }
-                            { settings.licenseStatus === 'active' && 'The application is fully activated.' }
-                            { settings.licenseStatus === 'inactive' && 'The trial has expired. The app is currently locked.' }
+                            {settings.licenseStatus === 'trial' ? 'The application is currently in trial mode.' : 'The application is fully activated.'}
                         </p>
                     </div>
-                    {/* The button now appears for both trial and inactive statuses */}
                     {settings.licenseStatus !== 'active' && (
                         <button onClick={handleActivate} className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">
                             <FiZap /> Activate Full Version

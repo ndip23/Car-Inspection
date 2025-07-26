@@ -4,7 +4,6 @@ import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-// REMOVED: DeveloperAuthProvider is no longer needed with this simplified logic
 import "react-datepicker/dist/react-datepicker.css";
 
 // Layouts and Route Handlers
@@ -12,7 +11,7 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/admin/AdminRoute';
 import AdminLayout from './components/admin/AdminLayout';
-import DeveloperRoute from './components/DeveloperRoute'; // We still use the guard
+// REMOVED: import DeveloperRoute from './components/DeveloperRoute';
 
 // Pages
 import Login from './pages/Login';
@@ -24,7 +23,7 @@ import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import SettingsPage from './pages/SettingsPage';
 import ReportsPage from './pages/ReportsPage';
 import NotFound from './pages/NotFound';
-import DeveloperPanel from './pages/DeveloperPanel'; // Ensure this is imported
+import DeveloperPanel from './pages/DeveloperPanel';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -44,31 +43,18 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        {/* --- THIS IS THE CORRECTED DEVELOPER ROUTE --- */}
-        {/* We wrap the entire route definition in the guard */}
-        <Route 
-          path="/developer-panel"
-          element={
-            <DeveloperRoute>
-              <DashboardLayout>
-                <DeveloperPanel />
-              </DashboardLayout>
-            </DeveloperRoute>
-          }
-        />
-        
         {/* Admin Routes */}
         <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="users" element={<UserManagementPage />} />
-                {/*<Route path="vehicles" element={<VehicleDatabasePage />} />*/}
+                 {/*<Route path="vehicles" element={<VehicleDatabasePage />} />*/}
                 <Route path="performance" element={<InspectorPerformancePage />} />
                 <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
         </Route>
         
-        {/* Standard User Routes */}
+        {/* Standard User and Developer Routes */}
         <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
           <Route index element={<Dashboard />} />
           <Route path="profile" element={<ProfileSettingsPage />} />
@@ -76,6 +62,9 @@ function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="vehicle/:id" element={<VehicleDetails />} />
           <Route path="vehicle/:id/new-inspection" element={<NewInspection />} />
+          {/* --- NEW, SIMPLIFIED DEVELOPER ROUTE --- */}
+          {/* It's now just a regular protected route inside the main layout */}
+          <Route path="developer-panel" element={<DeveloperPanel />} />
         </Route>
         
         <Route path="*" element={<NotFound />} />
@@ -84,7 +73,6 @@ function App() {
   );
 }
 
-// We no longer need the DeveloperAuthProvider
 const AppWrapper = () => (
     <Router>
         <ThemeProvider>

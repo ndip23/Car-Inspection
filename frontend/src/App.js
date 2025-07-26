@@ -22,6 +22,9 @@ import ProfileSettingsPage from './pages/ProfileSettingsPage';
 import SettingsPage from './pages/SettingsPage';
 import ReportsPage from './pages/ReportsPage';
 import NotFound from './pages/NotFound';
+// Developer Panel
+import DeveloperRoute from './components/DeveloperRoute'; 
+import DeveloperPanel from './pages/DeveloperPanel';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -39,6 +42,9 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+         <Route element={<DeveloperRoute />}>
+          <Route path="/developer-panel" element={<DashboardLayout><DeveloperPanel /></DashboardLayout>} />
+        </Route>
         
         {/* --- ADMIN ROUTES SECTION --- */}
         <Route element={<AdminRoute />}>

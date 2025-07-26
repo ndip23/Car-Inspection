@@ -15,7 +15,8 @@ import {
     FiBell, 
     FiSend, 
     FiCheckCircle,
-    FiShield // New icon for Admin Panel
+    FiShield,
+     FiCode // New icon for Admin Panel
 } from 'react-icons/fi';
 
 const Navbar = () => {
@@ -76,6 +77,15 @@ const Navbar = () => {
         </Link>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
+          {user && user.email === process.env.REACT_APP_DEV_EMAIL && (
+                        <Link 
+                            to="/developer-panel" 
+                            className="hidden sm:flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors font-semibold"
+                        >
+                            <FiCode size={16} />
+                            Developer
+                        </Link>
+                    )}
           {/* --- NEW: Conditional Admin Panel Button --- */}
           {user && user.role === 'admin' && (
             <Link 

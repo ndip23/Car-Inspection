@@ -6,43 +6,48 @@ import { differenceInDays } from 'date-fns';
 const TRIAL_PERIOD_DAYS = 14;
 
 const checkLicense = asyncHandler(async (req, res, next) => {
-    // --- THIS IS THE NEW, SIMPLIFIED LOGIC ---
-    // The middleware now only has ONE job: read the license status and block if necessary.
-    // It no longer tries to create or modify settings.
+    console.log(`--- LICENSE CHECK for URL: ${req.originalUrl} ---`);
+    try {
+        const licenseStatusSetting = await Setting.findOne({ key: 'licenseStatus' });
 
-    const licenseStatusSetting = await Setting.findOne({ key: 'licenseStatus' });
-
-    // If the setting doesn't exist yet, allow the request to pass.
-    // The getSettings controller will create it. This prevents the circular error.
-    if (!licenseStatusSetting) {
-        return next();
-    }
-
-    const licenseStatus = licenseStatusSetting.value;
-
-    // If the license is active, allow the request.
-    if (licenseStatus === 'active') {
-        return next();
-    }
-
-    // If the license is in trial, check the start date.
-    if (licenseStatus === 'trial') {
-        const trialStartDateSetting = await Setting.findOne({ key: 'trialStartDate' });
-        
-        // If the start date doesn't exist for some reason, let it pass for now.
-        if (!trialStartDateSetting) {
+        if (!licenseStatusSetting) {
+            console.log('License status not found, allowing request to pass for initialization.');
             return next();
         }
 
-        const daysSinceStart = differenceInDays(new Date(), new Date(trialStartDateSetting.value));
-        if (daysSinceStart <= TRIAL_PERIOD_DAYS) {
-            return next(); // Still in trial, allow request.
-        }
-    }
+        const licenseStatus = licenseStatusSetting.value;
+        console.log(`Current license status is: ${licenseStatus}`);
 
-    // If we reach this point, the trial has expired or the license is inactive. Block the request.
-    res.status(403); // 403 Forbidden
-    throw new Error('Trial period has expired or license is inactive. Please contact support.');
+        if (licenseStatus === 'active') {
+            console.log('License is active. Allowing request.');
+            return next();
+        }
+
+        if (licenseStatus === 'trial') {
+            const trialStartDateSetting = await Setting.findOne({ key: 'trialStartDate' });
+            if (!trialStartDateSetting) {
+                console.log('Trial status, but no start date found. Allowing request for initialization.');
+                return next();
+            }
+
+            const daysSinceStart = differenceInDays(new Date(), new Date(trialStartDateSetting.value));
+            console.log(`Days since trial start: ${daysSinceStart}`);
+
+            if (daysSinceStart <= TRIAL_PERIOD_DAYS) {
+                console.log('Within trial period. Allowing request.');
+                return next();
+            }
+        }
+
+        console.log('!!! BLOCKING REQUEST: Trial expired or license inactive. !!!');
+        res.status(403);
+        throw new Error('Trial period has expired or license is inactive. Please contact support.');
+
+    } catch (error) {
+        console.error('!!! CRASH IN licenseMiddleware !!!', error);
+        // Pass the original error message if it exists
+        throw new Error(error.message || 'Server error in licenseMiddleware.');
+    }
 });
 
 export default checkLicense;

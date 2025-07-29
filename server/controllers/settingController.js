@@ -45,31 +45,34 @@ const getSettings = asyncHandler(async (req, res) => {
 });
 
 const updateSettings = asyncHandler(async (req, res) => {
-    console.log('--- ENTERING updateSettings CONTROLLER ---');
-    try {
-        const settingsToUpdate = req.body;
-        console.log('Received settings to update:', settingsToUpdate);
+    const settingsFromFrontend = req.body;
 
-        const editableKeys = ['smsGatewayUrl', 'licenseStatus', 'whatsappReminder', 'emailReminderSubject', 'emailReminderBody'];
-        
-        // Using a simple for...of loop for maximum reliability and clear logging
+    // --- ADD 'trialStartDate' to this list ---
+    const editableKeys = [
+        'smsGatewayUrl', 
+        'licenseStatus', 
+        'trialStartDate', // <-- ADD THIS
+        'whatsappReminder', 
+        'emailReminderSubject', 
+        'emailReminderBody'
+    ];
+
+    try {
+        const updatePromises = [];
         for (const key of editableKeys) {
-            if (Object.hasOwnProperty.call(settingsToUpdate, key)) {
-                const value = settingsToUpdate[key];
-                console.log(`Updating setting -> Key: ${key}, Value: ${value}`);
-                await Setting.findOneAndUpdate(
+            if (Object.hasOwnProperty.call(settingsFromFrontend, key)) {
+                const value = settingsFromFrontend[key];
+                const promise = Setting.findOneAndUpdate(
                     { key: key },
                     { $set: { value: value } },
                     { upsert: true, new: true }
                 );
+                updatePromises.push(promise);
             }
         }
-
-        console.log('--- EXITING updateSettings SUCCESSFULLY ---');
+        await Promise.all(updatePromises);
         res.json({ message: 'Settings updated successfully.' });
-
     } catch (error) {
-        console.error('!!! CRASH IN updateSettings !!!', error);
         res.status(500);
         throw new Error('An error occurred while saving settings.');
     }

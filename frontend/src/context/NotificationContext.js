@@ -7,42 +7,38 @@ const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
-    const { isAuthenticated } = useAuth();
+    const { user, isAuthenticated } = useAuth(); // Depend on the user object as well
 
-    // useCallback ensures this function is stable and doesn't cause unnecessary re-renders
     const getNotifications = useCallback(async () => {
         if (!isAuthenticated) {
-            setNotifications([]); // Clear notifications when the user logs out
+            setNotifications([]);
             return;
         }
         try {
             const res = await fetchNotifications();
             setNotifications(res.data);
         } catch (error) {
-            console.error("Could not fetch notifications", error);
+            // Don't show an error toast here as it can be annoying on every page load.
+            // Console log is sufficient for debugging.
+            console.error("Could not fetch notifications:", error.message);
         }
     }, [isAuthenticated]);
 
     useEffect(() => {
-        // 1. Fetch notifications when the component first loads or when the user's auth status changes.
+        // This effect will now re-run whenever the user logs in or out.
         getNotifications();
 
-        // 2. Create the event handler function.
         const handleUpdate = () => {
-            console.log("NotificationContext heard 'notificationsUpdated' event. Refetching...");
             getNotifications();
         };
-
-        // 3. Add the event listener to the global window object.
+        
         window.addEventListener('notificationsUpdated', handleUpdate);
 
-        // 4. IMPORTANT: Clean up the event listener when the component unmounts to prevent memory leaks.
         return () => {
             window.removeEventListener('notificationsUpdated', handleUpdate);
         };
-    }, [getNotifications]);
+    }, [user, getNotifications]); // <-- Add 'user' as a dependency
 
-    // The context now provides the notifications data. The refetching is handled internally by the listener.
     const value = { notifications };
 
     return (

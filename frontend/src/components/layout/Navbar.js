@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Popover, Transition } from '@headlessui/react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { useNotifications } from '../../context/NotificationContext'; // <-- IMPORT THE NEW HOOK
+import { useNotifications } from '../../context/NotificationContext'; // <-- IMPORT THE HOOK
 import { sendNotificationEmail, acknowledgeNotification } from '../../services/api';
 import toast from 'react-hot-toast';
 import { 
@@ -24,12 +24,7 @@ const Navbar = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  
-  // Use the new context for all notification-related data and actions
-  const { notifications, refetchNotifications } = useNotifications();
-
-  // The useEffect to fetch notifications has been REMOVED from this component
-  // because the NotificationContext now handles it globally.
+  const { notifications } = useNotifications(); // <-- Use the context to get notifications
 
   const handleLogout = () => {
     logout();
@@ -38,13 +33,17 @@ const Navbar = () => {
 
   const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
+  // Dispatch the event to trigger a global refetch
+  const triggerRefetch = () => {
+      window.dispatchEvent(new CustomEvent('notificationsUpdated'));
+  };
+
   const handleSend = async (id) => {
     const toastId = toast.loading('Sending reminder...');
     try {
         await sendNotificationEmail(id);
         toast.success('Reminder sent!', { id: toastId });
-        // After sending, refetch the list to update its status from 'pending' to 'sent'
-        refetchNotifications();
+        triggerRefetch(); // Trigger refetch after action
     } catch (error) {
         toast.error('Failed to send reminder.', { id: toastId });
     }
@@ -54,8 +53,7 @@ const Navbar = () => {
     try {
         await acknowledgeNotification(id);
         toast.success('Notification acknowledged.');
-        // After acknowledging, refetch the list to remove it from the view.
-        refetchNotifications();
+        triggerRefetch(); // Trigger refetch after action
     } catch (error) {
         toast.error('Failed to acknowledge.');
     }
@@ -71,23 +69,15 @@ const Navbar = () => {
         <div className="flex items-center space-x-2 sm:space-x-4">
           {/* Conditional Developer Panel Link */}
           {user && user.email === process.env.REACT_APP_DEV_EMAIL && (
-            <Link 
-              to="/developer-panel" 
-              className="hidden sm:flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors font-semibold"
-            >
-              <FiCode size={16} />
-              Developer
+            <Link to="/developer-panel" className="hidden sm:flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors font-semibold">
+              <FiCode size={16} /> Developer
             </Link>
           )}
 
           {/* Conditional Admin Panel Button */}
           {user && user.role === 'admin' && (
-            <Link 
-              to="/admin" 
-              className="hidden sm:flex items-center gap-2 px-3 py-2 bg-secondary/20 text-secondary hover:bg-secondary/30 rounded-lg transition-colors font-semibold"
-            >
-              <FiShield size={16} />
-              Admin Panel
+            <Link to="/admin" className="hidden sm:flex items-center gap-2 px-3 py-2 bg-secondary/20 text-secondary hover:bg-secondary/30 rounded-lg transition-colors font-semibold">
+              <FiShield size={16} /> Admin Panel
             </Link>
           )}
 
@@ -100,7 +90,6 @@ const Navbar = () => {
           <Popover className="relative">
             <Popover.Button className="relative p-2 rounded-full hover:bg-light-border dark:hover:bg-dark-border transition-colors focus:outline-none">
                 <FiBell className="text-light-text-secondary dark:text-dark-text-secondary" />
-                {/* The notification count comes directly from the context state */}
                 {notifications.length > 0 && (
                     <span className="absolute top-0 right-0 flex h-4 w-4">
                         <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-xs items-center justify-center">
@@ -109,15 +98,7 @@ const Navbar = () => {
                     </span>
                 )}
             </Popover.Button>
-            <Transition
-              as={Fragment}
-              enter="transition ease-out duration-200"
-              enterFrom="opacity-0 translate-y-1"
-              enterTo="opacity-100 translate-y-0"
-              leave="transition ease-in duration-150"
-              leaveFrom="opacity-100 translate-y-0"
-              leaveTo="opacity-0 translate-y-1"
-            >
+            <Transition as={Fragment} enter="transition ease-out duration-200" enterFrom="opacity-0 translate-y-1" enterTo="opacity-100 translate-y-0" leave="transition ease-in duration-150" leaveFrom="opacity-100 translate-y-0" leaveTo="opacity-0 translate-y-1">
                 <Popover.Panel className="absolute right-0 z-10 mt-2 w-80 max-h-[70vh] overflow-y-auto origin-top-right rounded-xl bg-light-card dark:bg-dark-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none p-2">
                     <div className="p-2 font-bold border-b border-light-border dark:border-dark-border">Notifications</div>
                     <div className="flow-root">
@@ -147,24 +128,12 @@ const Navbar = () => {
             <div>
               <Menu.Button className="flex items-center space-x-2 p-1.5 pr-3 rounded-lg bg-light-card/80 dark:bg-dark-card/80 hover:bg-light-border dark:hover:bg-dark-border transition-colors">
                 <span className="w-8 h-8 flex items-center justify-center bg-light-border dark:bg-dark-border rounded-md overflow-hidden">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <FiUser className="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" />
-                  )}
+                  {user.avatar ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" /> : <FiUser className="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" />}
                 </span>
                 <span className="font-semibold text-sm">{user.name}</span>
               </Menu.Button>
             </div>
-            <Transition
-              as={Fragment}
-              enter="transition ease-out duration-100"
-              enterFrom="transform opacity-0 scale-95"
-              enterTo="transform opacity-100 scale-100"
-              leave="transition ease-in duration-75"
-              leaveFrom="transform opacity-100 scale-100"
-              leaveTo="transform opacity-0 scale-95"
-            >
+            <Transition as={Fragment} enter="transition ease-out duration-100" enterFrom="transform opacity-0 scale-95" enterTo="transform opacity-100 scale-100" leave="transition ease-in duration-75" leaveFrom="transform opacity-100 scale-100" leaveTo="transform opacity-0 scale-95">
               <Menu.Items className="absolute right-0 mt-2 w-64 origin-top-right divide-y divide-light-border dark:divide-dark-border rounded-xl bg-light-card dark:bg-dark-card shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                 <div className="px-4 py-3">
                   <p className="text-sm">Signed in as</p>
@@ -172,33 +141,11 @@ const Navbar = () => {
                   <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{capitalize(user.role)} Role</p>
                 </div>
                 <div className="py-1">
-                  <Menu.Item>
-                    {({ active }) => (
-                      <Link to="/profile" className={`${active ? 'bg-light-bg dark:bg-dark-bg' : ''} group flex w-full items-center rounded-md px-4 py-2 text-sm`}>
-                        <FiUser className="mr-2 h-5 w-5" aria-hidden="true" /> My Profile
-                      </Link>
-                    )}
-                  </Menu.Item>
-                  <Menu.Item>
-                    {({ active }) => (
-                      <Link to="/settings" className={`${active ? 'bg-light-bg dark:bg-dark-bg' : ''} group flex w-full items-center rounded-md px-4 py-2 text-sm`}>
-                        <FiSettings className="mr-2 h-5 w-5" aria-hidden="true" /> App Settings
-                      </Link>
-                    )}
-                  </Menu.Item>
+                  <Menu.Item>{({ active }) => (<Link to="/profile" className={`${active ? 'bg-light-bg dark:bg-dark-bg' : ''} group flex w-full items-center rounded-md px-4 py-2 text-sm`}><FiUser className="mr-2 h-5 w-5" /> My Profile</Link>)}</Menu.Item>
+                  <Menu.Item>{({ active }) => (<Link to="/settings" className={`${active ? 'bg-light-bg dark:bg-dark-bg' : ''} group flex w-full items-center rounded-md px-4 py-2 text-sm`}><FiSettings className="mr-2 h-5 w-5" /> App Settings</Link>)}</Menu.Item>
                 </div>
                 <div className="py-1">
-                  <Menu.Item>
-                    {({ active }) => (
-                      <button
-                        onClick={handleLogout}
-                        className={`${active ? 'bg-light-bg dark:bg-dark-bg' : ''} group flex w-full items-center rounded-md px-4 py-2 text-sm text-red-500`}
-                      >
-                        <FiLogOut className="mr-2 h-5 w-5" aria-hidden="true" />
-                        Logout
-                      </button>
-                    )}
-                  </Menu.Item>
+                  <Menu.Item>{({ active }) => (<button onClick={handleLogout} className={`${active ? 'bg-light-bg dark:bg-dark-bg' : ''} group flex w-full items-center rounded-md px-4 py-2 text-sm text-red-500`}><FiLogOut className="mr-2 h-5 w-5" /> Logout</button>)}</Menu.Item>
                 </div>
               </Menu.Items>
             </Transition>

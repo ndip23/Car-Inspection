@@ -7,7 +7,6 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { FiSave } from 'react-icons/fi';
 import toast from 'react-hot-toast';
-import { useNotifications } from '../context/NotificationContext';
 
 const NewInspection = () => {
     const { id: vehicleId } = useParams();
@@ -16,8 +15,6 @@ const NewInspection = () => {
 
     const [result, setResult] = useState('pass');
     const [notes, setNotes] = useState('');
-     const { refetchNotifications } = useNotifications();
-    // RESTORED: State for the next due date
     const [nextDueDate, setNextDueDate] = useState(''); 
     const [loading, setLoading] = useState(false);
 
@@ -28,7 +25,6 @@ const NewInspection = () => {
         }
         setLoading(true);
 
-        // RESTORED: The payload now includes the manually entered date
         const inspectionData = {
             vehicleId,
             result,
@@ -39,8 +35,14 @@ const NewInspection = () => {
         try {
             await createInspection(inspectionData);
             toast.success('Inspection created successfully!');
+            
+            // --- THIS IS THE CRITICAL UPDATE ---
+            // Create and dispatch a custom event that the NotificationContext will hear.
+            console.log("Dispatching 'notificationsUpdated' event from NewInspection page...");
+            window.dispatchEvent(new CustomEvent('notificationsUpdated'));
+            // ------------------------------------
+
             navigate(`/vehicle/${vehicleId}`);
-             refetchNotifications();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create inspection.');
         } finally {
@@ -65,7 +67,6 @@ const NewInspection = () => {
                         </select>
                     </div>
 
-                    {/* RESTORED: The "Next Due Date" input field */}
                     <div>
                         <label className="block text-sm font-bold text-light-text-secondary dark:text-dark-text-secondary mb-2">Next Due Date *</label>
                         <input

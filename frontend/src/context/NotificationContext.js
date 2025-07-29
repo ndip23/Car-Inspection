@@ -9,9 +9,10 @@ export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
     const { isAuthenticated } = useAuth();
 
+    // useCallback ensures this function is stable and doesn't cause unnecessary re-renders
     const getNotifications = useCallback(async () => {
         if (!isAuthenticated) {
-            setNotifications([]); // Clear notifications if user logs out
+            setNotifications([]); // Clear notifications when the user logs out
             return;
         }
         try {
@@ -23,11 +24,26 @@ export const NotificationProvider = ({ children }) => {
     }, [isAuthenticated]);
 
     useEffect(() => {
+        // 1. Fetch notifications when the component first loads or when the user's auth status changes.
         getNotifications();
+
+        // 2. Create the event handler function.
+        const handleUpdate = () => {
+            console.log("NotificationContext heard 'notificationsUpdated' event. Refetching...");
+            getNotifications();
+        };
+
+        // 3. Add the event listener to the global window object.
+        window.addEventListener('notificationsUpdated', handleUpdate);
+
+        // 4. IMPORTANT: Clean up the event listener when the component unmounts to prevent memory leaks.
+        return () => {
+            window.removeEventListener('notificationsUpdated', handleUpdate);
+        };
     }, [getNotifications]);
 
-    // The value provides the notifications and a function to manually refetch them
-    const value = { notifications, refetchNotifications: getNotifications };
+    // The context now provides the notifications data. The refetching is handled internally by the listener.
+    const value = { notifications };
 
     return (
         <NotificationContext.Provider value={value}>

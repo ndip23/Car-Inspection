@@ -1,10 +1,11 @@
 // frontend/src/components/layout/Navbar.js
-import React, { Fragment, useState, useEffect } from 'react';
+import React, { Fragment } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, Popover, Transition } from '@headlessui/react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { fetchNotifications, sendNotificationEmail, acknowledgeNotification } from '../../services/api';
+import { useNotifications } from '../../context/NotificationContext'; // <-- IMPORT THE NEW HOOK
+import { sendNotificationEmail, acknowledgeNotification } from '../../services/api';
 import toast from 'react-hot-toast';
 import { 
     FiLogOut, 
@@ -16,29 +17,19 @@ import {
     FiSend, 
     FiCheckCircle,
     FiShield,
-     FiCode // New icon for Admin Panel
+    FiCode
 } from 'react-icons/fi';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState([]);
+  
+  // Use the new context for all notification-related data and actions
+  const { notifications, refetchNotifications } = useNotifications();
 
-  // ... (useEffect and other handler functions remain the same)
-  useEffect(() => {
-    if(user) {
-      const getNotifications = async () => {
-          try {
-              const res = await fetchNotifications();
-              setNotifications(res.data);
-          } catch (err) {
-              console.error("Could not fetch notifications", err);
-          }
-      };
-      getNotifications();
-    }
-  }, [user]);
+  // The useEffect to fetch notifications has been REMOVED from this component
+  // because the NotificationContext now handles it globally.
 
   const handleLogout = () => {
     logout();
@@ -52,7 +43,8 @@ const Navbar = () => {
     try {
         await sendNotificationEmail(id);
         toast.success('Reminder sent!', { id: toastId });
-        setNotifications(prev => prev.map(n => n._id === id ? {...n, status: 'sent', sentAt: new Date()} : n));
+        // After sending, refetch the list to update its status from 'pending' to 'sent'
+        refetchNotifications();
     } catch (error) {
         toast.error('Failed to send reminder.', { id: toastId });
     }
@@ -61,13 +53,13 @@ const Navbar = () => {
   const handleAcknowledge = async (id) => {
     try {
         await acknowledgeNotification(id);
-        setNotifications(prev => prev.filter(n => n._id !== id));
         toast.success('Notification acknowledged.');
+        // After acknowledging, refetch the list to remove it from the view.
+        refetchNotifications();
     } catch (error) {
         toast.error('Failed to acknowledge.');
     }
   };
-
 
   return (
     <header className="sticky top-0 z-50 glass-card">
@@ -77,16 +69,18 @@ const Navbar = () => {
         </Link>
         
         <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Conditional Developer Panel Link */}
           {user && user.email === process.env.REACT_APP_DEV_EMAIL && (
-                        <Link 
-                            to="/developer-panel" 
-                            className="hidden sm:flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors font-semibold"
-                        >
-                            <FiCode size={16} />
-                            Developer
-                        </Link>
-                    )}
-          {/* --- NEW: Conditional Admin Panel Button --- */}
+            <Link 
+              to="/developer-panel" 
+              className="hidden sm:flex items-center gap-2 px-3 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors font-semibold"
+            >
+              <FiCode size={16} />
+              Developer
+            </Link>
+          )}
+
+          {/* Conditional Admin Panel Button */}
           {user && user.role === 'admin' && (
             <Link 
               to="/admin" 
@@ -96,7 +90,6 @@ const Navbar = () => {
               Admin Panel
             </Link>
           )}
-          {/* ------------------------------------------- */}
 
           {/* Theme Toggle */}
           <button onClick={toggleTheme} className="p-2 rounded-full hover:bg-light-border dark:hover:bg-dark-border transition-colors">
@@ -105,9 +98,9 @@ const Navbar = () => {
 
           {/* Notifications Popover */}
           <Popover className="relative">
-            {/* ... (Popover code remains exactly the same) ... */}
             <Popover.Button className="relative p-2 rounded-full hover:bg-light-border dark:hover:bg-dark-border transition-colors focus:outline-none">
                 <FiBell className="text-light-text-secondary dark:text-dark-text-secondary" />
+                {/* The notification count comes directly from the context state */}
                 {notifications.length > 0 && (
                     <span className="absolute top-0 right-0 flex h-4 w-4">
                         <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-xs items-center justify-center">
@@ -151,7 +144,6 @@ const Navbar = () => {
 
           {/* User Dropdown Menu */}
           <Menu as="div" className="relative">
-            {/* ... (Menu code remains exactly the same) ... */}
             <div>
               <Menu.Button className="flex items-center space-x-2 p-1.5 pr-3 rounded-lg bg-light-card/80 dark:bg-dark-card/80 hover:bg-light-border dark:hover:bg-dark-border transition-colors">
                 <span className="w-8 h-8 flex items-center justify-center bg-light-border dark:bg-dark-border rounded-md overflow-hidden">

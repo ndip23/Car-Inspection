@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import "react-datepicker/dist/react-datepicker.css";
+import { NotificationProvider } from './context/NotificationContext';
 
 // Layouts and Route Handlers
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -77,7 +78,9 @@ const AppWrapper = () => (
     <Router>
         <ThemeProvider>
             <AuthProvider>
+               <NotificationProvider>
                 <App />
+                </NotificationProvider>
             </AuthProvider>
         </ThemeProvider>
     </Router>

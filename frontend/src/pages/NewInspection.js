@@ -7,6 +7,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { FiSave } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useNotifications } from '../context/NotificationContext';
 
 const NewInspection = () => {
     const { id: vehicleId } = useParams();
@@ -15,6 +16,7 @@ const NewInspection = () => {
 
     const [result, setResult] = useState('pass');
     const [notes, setNotes] = useState('');
+     const { refetchNotifications } = useNotifications();
     // RESTORED: State for the next due date
     const [nextDueDate, setNextDueDate] = useState(''); 
     const [loading, setLoading] = useState(false);
@@ -38,6 +40,7 @@ const NewInspection = () => {
             await createInspection(inspectionData);
             toast.success('Inspection created successfully!');
             navigate(`/vehicle/${vehicleId}`);
+             refetchNotifications();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create inspection.');
         } finally {

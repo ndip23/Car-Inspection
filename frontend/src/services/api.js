@@ -53,3 +53,4 @@ export const toggleUserStatus = (userId) => API.put(`/admin/users/${userId}/stat
 export const fetchInspectorPerformance = () => API.get('/admin/performance');
 export const fetchSettings = () => API.get('/settings');
 export const updateSettings = (settingsData) => API.put('/settings', settingsData);
+export const sendAllPendingReminders = () => API.post('/admin/notifications/send-all');

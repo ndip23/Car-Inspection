@@ -10,7 +10,8 @@ import {
     getAllVehicles,
     adminUpdateVehicle,
     adminDeleteVehicle,
-    getInspectorPerformance // --- IMPORT THE NEW CONTROLLER ---
+    getInspectorPerformance,
+    sendAllPendingReminders
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -29,5 +30,7 @@ router.route('/vehicles/:id').put(adminUpdateVehicle).delete(adminDeleteVehicle)
 
 // --- ADD THE NEW PERFORMANCE ROUTE ---
 router.get('/performance', getInspectorPerformance);
+router.post('/notifications/send-all', sendAllPendingReminders);
+
 
 export default router;

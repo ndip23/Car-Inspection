@@ -197,6 +197,63 @@ const getInspectorPerformance = asyncHandler(async (req, res) => {
     res.json(performance);
 });
 
+const sendAllPendingReminders = asyncHandler(async (req, res) => {
+    // 1. Find all notifications that are ready to be sent.
+    const pendingNotifications = await Notification.find({ status: 'pending' }).populate('vehicle');
+
+    if (pendingNotifications.length === 0) {
+        return res.json({ message: 'No pending reminders to send.' });
+    }
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    // 2. Loop through each notification and attempt to send.
+    for (const notification of pendingNotifications) {
+        let emailSuccess = false;
+        let smsSuccess = false;
+        const { vehicle } = notification;
+
+        // Skip if for some reason the vehicle was deleted.
+        if (!vehicle) {
+            failureCount++;
+            continue;
+        }
+
+        // Attempt to send email
+        emailSuccess = await sendEmailReminder(
+            vehicle.owner_email,
+            vehicle.owner_name,
+            vehicle.license_plate,
+            notification.dueDate
+        );
+
+        // Attempt to send SMS
+        const formattedDate = format(new Date(notification.dueDate), 'MMMM do, yyyy');
+        const smsMessage = `Dear ${vehicle.owner_name}, your vehicle ${vehicle.license_plate} is due for inspection on ${formattedDate}. -VisuTech`;
+        smsSuccess = await sendLocalSmsReminder(vehicle.owner_phone, smsMessage);
+
+        // 3. If either was successful, update the notification status.
+        if (emailSuccess || smsSuccess) {
+            successCount++;
+            notification.status = 'sent';
+            notification.sentAt = new Date();
+            await notification.save();
+        } else {
+            failureCount++;
+        }
+    }
+
+    // 4. Return a summary of the operation.
+    res.json({
+        message: 'Processing complete.',
+        successCount,
+        failureCount,
+        total: pendingNotifications.length
+    });
+});
+
+
 export { 
     getDashboardStats, 
     getAllUsers, 
@@ -206,5 +263,6 @@ export {
     getAllVehicles,
     adminUpdateVehicle,
     adminDeleteVehicle,
-    getInspectorPerformance 
+    getInspectorPerformance,
+    sendAllPendingReminders
 };

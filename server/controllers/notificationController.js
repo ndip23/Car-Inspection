@@ -122,4 +122,61 @@ const acknowledgeNotification = asyncHandler(async (req, res) => {
     res.json({ message: 'This action is no longer required.' });
 });
 
-export { getNotifications, sendNotification, acknowledgeNotification };
+// @desc    Process and send all dynamically generated pending reminders
+// @route   POST /api/notifications/send-all
+// @access  Private
+const sendAllPendingReminders = asyncHandler(async (req, res) => {
+    // 1. Get the real-time list of pending reminders using the same logic as getNotifications.
+    const now = startOfDay(new Date());
+    const windowEnd = addDays(now, 7);
+    const pendingReminders = await Inspection.aggregate([
+        // This aggregation pipeline is the same as in getNotifications...
+        { $sort: { vehicle: 1, date: -1 } },
+        { $group: { _id: "$vehicle", latestInspectionId: { $first: "$_id" } } },
+        { $lookup: { from: "inspections", localField: "latestInspectionId", foreignField: "_id", as: "inspectionDetails" } },
+        { $unwind: "$inspectionDetails" },
+        { $lookup: { from: "vehicles", localField: "inspectionDetails.vehicle", foreignField: "_id", as: "vehicleDetails" } },
+        { $unwind: "$vehicleDetails" },
+        { $match: { "inspectionDetails.next_due_date": { $gte: now, $lte: windowEnd } } },
+        // We only need the necessary details for sending.
+        { $project: { 
+            vehicle: "$vehicleDetails", 
+            dueDate: "$inspectionDetails.next_due_date"
+        }}
+    ]);
+
+    if (pendingReminders.length === 0) {
+        return res.json({ message: 'No pending reminders to send.' });
+    }
+
+    let successCount = 0;
+    let failureCount = 0;
+
+    // 2. Loop through the dynamically generated list and send.
+    for (const reminder of pendingReminders) {
+        const { vehicle, dueDate } = reminder;
+        let emailSuccess = false;
+        let smsSuccess = false;
+
+        emailSuccess = await sendEmailReminder(vehicle.owner_email, vehicle.owner_name, vehicle.license_plate, dueDate);
+        
+        const formattedDate = format(new Date(dueDate), 'MMMM do, yyyy');
+        const smsMessage = `Dear ${vehicle.owner_name}, your vehicle ${vehicle.license_plate} is due for inspection on ${formattedDate}. -VisuTech`;
+        smsSuccess = await sendLocalSmsReminder(vehicle.owner_phone, smsMessage);
+
+        if (emailSuccess || smsSuccess) {
+            successCount++;
+        } else {
+            failureCount++;
+        }
+    }
+
+    res.json({
+        message: 'Processing complete.',
+        successCount,
+        failureCount,
+        total: pendingReminders.length
+    });
+});
+
+export { getNotifications, sendNotification, acknowledgeNotification, sendAllPendingReminders };

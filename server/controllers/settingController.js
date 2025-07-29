@@ -2,10 +2,12 @@
 import asyncHandler from 'express-async-handler';
 import Setting from '../models/Setting.js';
 
-// This function is already correct and robust. No changes needed here.
+// @desc    Get all settings and create defaults if they don't exist
+// @route   GET /api/settings
+// @access  Private/Admin or Developer
 const getSettings = asyncHandler(async (req, res) => {
     const requiredKeys = ['licenseStatus', 'trialStartDate', 'smsGatewayUrl'];
-    const settingsFromDB = await Setting.find({});
+    const settingsFromDB = await Setting.find({ key: { $in: requiredKeys } });
     const existingKeys = settingsFromDB.map(s => s.key);
     const missingKeys = requiredKeys.filter(k => !existingKeys.includes(k));
 
@@ -31,53 +33,26 @@ const getSettings = asyncHandler(async (req, res) => {
     res.json(settingsMap);
 });
 
-
-// --- THIS IS THE FINAL, CORRECTED UPDATE FUNCTION ---
-// @desc    Update or create multiple settings at once
+// @desc    Update one or more settings
 // @route   PUT /api/settings
-// @access  Private/Admin
+// @access  Private/Admin or Developer
 const updateSettings = asyncHandler(async (req, res) => {
-    const settingsFromFrontend = req.body;
-
-    // Define a list of keys that are explicitly allowed to be edited from the frontend.
-    const editableKeys = [
-        'smsGatewayUrl', 
-        'licenseStatus', 
-        'whatsappReminder', 
-        'emailReminderSubject', 
-        'emailReminderBody'
-    ];
+    const settingsToUpdate = req.body;
 
     try {
-        // Create a promise array to run all database updates in parallel.
-        const updatePromises = [];
-
-        // Loop through the allowed keys only.
-        for (const key of editableKeys) {
-            // Check if the frontend sent a value for this specific key.
-            if (Object.hasOwnProperty.call(settingsFromFrontend, key)) {
-                const value = settingsFromFrontend[key];
-                
-                // Use findOneAndUpdate with upsert:true. This is the safest way.
-                const promise = Setting.findOneAndUpdate(
-                    { key: key },
-                    { $set: { value: value } },
-                    { upsert: true, new: true }
-                );
-                updatePromises.push(promise);
-            }
-        }
-
-        // Wait for all the update operations to complete.
+        const updatePromises = Object.entries(settingsToUpdate).map(([key, value]) =>
+            Setting.findOneAndUpdate(
+                { key: key },
+                { $set: { value: value } },
+                { upsert: true, new: true }
+            )
+        );
         await Promise.all(updatePromises);
-        
         res.json({ message: 'Settings updated successfully.' });
     } catch (error) {
-        // Catch any potential database errors.
         res.status(500);
         throw new Error('An error occurred while saving settings.');
     }
 });
-// --------------------------------------------------------------------
 
 export { getSettings, updateSettings };

@@ -6,42 +6,43 @@ import { differenceInDays } from 'date-fns';
 const TRIAL_PERIOD_DAYS = 14;
 
 const checkLicense = asyncHandler(async (req, res, next) => {
-    // Allow critical routes to pass without a license check
-    const allowedPaths = ['/api/auth/login', '/api/settings'];
-    if (allowedPaths.some(path => req.originalUrl.startsWith(path))) {
-        return next();
-    }
-    
-    const licenseStatusSetting = await Setting.findOne({ key: 'licenseStatus' });
-    const trialStartDateSetting = await Setting.findOne({ key: 'trialStartDate' });
+    // --- THIS IS THE NEW, SIMPLIFIED LOGIC ---
+    // The middleware now only has ONE job: read the license status and block if necessary.
+    // It no longer tries to create or modify settings.
 
-    // If settings don't exist yet, block access until an admin logs in and saves them.
-    if (!licenseStatusSetting || !trialStartDateSetting) {
-        res.status(403);
-        throw new Error('System not configured. Please contact support.');
+    const licenseStatusSetting = await Setting.findOne({ key: 'licenseStatus' });
+
+    // If the setting doesn't exist yet, allow the request to pass.
+    // The getSettings controller will create it. This prevents the circular error.
+    if (!licenseStatusSetting) {
+        return next();
     }
 
     const licenseStatus = licenseStatusSetting.value;
-    const trialStartDate = trialStartDateSetting.value;
 
+    // If the license is active, allow the request.
     if (licenseStatus === 'active') {
         return next();
     }
 
+    // If the license is in trial, check the start date.
     if (licenseStatus === 'trial') {
-        const daysSinceStart = differenceInDays(new Date(), new Date(trialStartDate));
-        if (daysSinceStart <= TRIAL_PERIOD_DAYS) {
+        const trialStartDateSetting = await Setting.findOne({ key: 'trialStartDate' });
+        
+        // If the start date doesn't exist for some reason, let it pass for now.
+        if (!trialStartDateSetting) {
             return next();
-        } else {
-            // NOTE: We no longer automatically change the status here. The banner will just show "expired".
-            // The developer must manually set it to "inactive" or "active".
-            res.status(403);
-            throw new Error('Trial period has expired. Please contact support to activate your license.');
+        }
+
+        const daysSinceStart = differenceInDays(new Date(), new Date(trialStartDateSetting.value));
+        if (daysSinceStart <= TRIAL_PERIOD_DAYS) {
+            return next(); // Still in trial, allow request.
         }
     }
 
-    res.status(403);
-    throw new Error('License is inactive. Please contact support.');
+    // If we reach this point, the trial has expired or the license is inactive. Block the request.
+    res.status(403); // 403 Forbidden
+    throw new Error('Trial period has expired or license is inactive. Please contact support.');
 });
 
 export default checkLicense;

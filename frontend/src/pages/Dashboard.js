@@ -16,7 +16,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [refetch, setRefetch] = useState(false);
-    const [sending, setSending] = useState(false); // State for the "Send All" button
+    const [sending, setSending] = useState(false);
 
     useEffect(() => {
         setLoading(true);
@@ -32,7 +32,7 @@ const Dashboard = () => {
     }, [searchTerm, refetch]);
 
     const handleVehicleCreated = () => {
-        setRefetch(prev => !prev); // Toggle refetch state to trigger useEffect
+        setRefetch(prev => !prev);
     };
 
     const handleSendAll = async () => {
@@ -45,7 +45,6 @@ const Dashboard = () => {
             } else {
                 toast.success(`Processing complete! Sent: ${data.successCount}, Failed: ${data.failureCount}.`, { id: toastId, duration: 5000 });
             }
-            // Dispatch event to update the notification bell in the navbar
             window.dispatchEvent(new CustomEvent('notificationsUpdated'));
         } catch (error) {
             toast.error(error.response?.data?.message || 'An error occurred while processing reminders.', { id: toastId });
@@ -54,6 +53,10 @@ const Dashboard = () => {
         }
     };
 
+    if (!user) {
+        return <div className="text-center p-8">Loading user data...</div>;
+    }
+
     return (
         <>
             <div className="space-y-6">
@@ -61,15 +64,13 @@ const Dashboard = () => {
                     <h1 className="text-3xl font-bold">Vehicle Dashboard</h1>
                     
                     <div className="flex items-center gap-2 w-full flex-wrap justify-center md:w-auto md:justify-end">
-                        {/* Conditional "Admin Panel" Button */}
-                        {user && user.role === 'admin' && (
+                        {user.role === 'admin' && (
                             <Link to="/admin" className="flex items-center justify-center space-x-2 bg-secondary/20 hover:bg-secondary/30 text-secondary font-bold py-2 px-4 rounded-lg transition duration-300">
                                 <FiShield />
                                 <span>Admin Panel</span>
                             </Link>
                         )}
                         
-                        {/* Send All Reminders Button */}
                         <button onClick={handleSendAll} disabled={sending} className="flex items-center justify-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 disabled:opacity-50">
                             {sending ? <FiLoader className="animate-spin" /> : <FiSend />}
                             <span>{sending ? 'Processing...' : 'Send All Reminders'}</span>
@@ -95,7 +96,9 @@ const Dashboard = () => {
                         type="text"
                         placeholder="Search by license plate..."
                         value={searchTerm}
+                        // --- THIS IS THE CORRECTED LINE ---
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        // ------------------------------------
                         className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                 </div>

@@ -1,7 +1,7 @@
 // frontend/src/pages/VehicleDetails.js
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiPlus, FiDownload, FiTool, FiUser, FiCalendar, FiSend, FiArrowLeft } from 'react-icons/fi'; // Import FiArrowLeft
+import { FiPlus, FiDownload, FiTool, FiUser, FiCalendar, FiSend, FiArrowLeft } from 'react-icons/fi';
 import { fetchVehicleById, fetchInspectionsByVehicleId, sendManualReminder } from '../services/api';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import InspectionCertificate from '../components/ui/InspectionCertificate';
@@ -45,25 +45,19 @@ const VehicleDetails = () => {
     }
   };
 
-
   if (loading) return <p className='text-center'>Loading vehicle details...</p>;
   if (!vehicle) return <p className='text-center'>Vehicle not found.</p>;
   
   const getStatusChip = (result) => (result === 'pass' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400');
 
   return (
-    // The main container now has its own space-y class
-    <div className="space-y-4"> 
-      
-      {/* --- NEW: Back to Dashboard Link --- */}
+    <div className="space-y-4">
       <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
         <FiArrowLeft />
         Back to Dashboard
       </Link>
       
-      {/* The grid now uses a larger gap */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Vehicle Info Card */}
         <div className="lg:col-span-1 p-6 rounded-xl glass-card space-y-4">
             <div className="flex items-center gap-4">
                 <FiTool className="w-8 h-8 text-primary"/>
@@ -87,7 +81,6 @@ const VehicleDetails = () => {
             </div>
         </div>
 
-        {/* Inspection History Card */}
         <div className="lg:col-span-2 p-6 rounded-xl glass-card">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <h2 className="text-2xl font-bold">Inspection History</h2>
@@ -117,7 +110,12 @@ const VehicleDetails = () => {
                         <div className="flex-grow">
                             <div className="flex items-center gap-2 font-bold"><FiCalendar size={14}/> {format(new Date(insp.date), 'MM/dd/yyyy')}</div>
                             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">Next Due: {format(new Date(insp.next_due_date), 'MM/dd/yyyy')}</p>
-                            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">Inspector: {insp.inspector_name}</p>
+                            
+                            {/* --- THIS IS THE CORRECTED LINE --- */}
+                            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
+                                Inspector: {insp.inspector?.name || 'N/A'}
+                            </p>
+                            
                             <p className="mt-2">{insp.notes}</p>
                         </div>
                         <div className='flex items-center space-x-4 flex-shrink-0'>

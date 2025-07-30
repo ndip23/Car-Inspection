@@ -4,22 +4,25 @@ import { createVehicle } from '../../services/api';
 import { FiSave } from 'react-icons/fi';
 import PhoneNumberInput from './PhoneNumberInput';
 
-// --- NEW CATEGORY LIST (matches the backend) ---
-const vehicleLicenseCategories = [
-    'Category A (Taxi/Driving School)',
-    'Category B (Private Cars)',
-    'Category B1 (Pickup/Van/Ambulance)',
-    'Category C (Minibus)',
-    'Category C+ (Grand Bus)',
-    'Category D (Trucks/Heavy Duty/Cargo Carriers)'
-];
+// --- NEW DATA STRUCTURE ---
+// This object defines the relationship between categories and their specific vehicle types.
+const vehicleTypesByCategory = {
+    'Category A ': ['Taxi', 'Driving School Car'],
+    'Category B ': ['Private Car'],
+    'Category B1 ': ['Pickup', 'Van', 'Ambulance', 'Minivan'],
+    'Category C ': ['Minibus '],
+    'Category C+ ': ['Grand Bus '],
+    'Category D': ['Light Truck', 'Heavy Goods Truck', 'Dump Truck', 'Cargo Carrier']
+};
+
+// We get just the category names for the first dropdown.
+const vehicleCategories = Object.keys(vehicleTypesByCategory);
 
 const NewVehicleForm = ({ onClose, onVehicleCreated }) => {
   const [formData, setFormData] = useState({
     license_plate: '',
     category: '',
     vehicle_type: '',
-    // --- UPDATED: "customer" fields ---
     customer_name: '',
     customer_phone_code: '+237',
     customer_phone_number: '',
@@ -31,9 +34,25 @@ const NewVehicleForm = ({ onClose, onVehicleCreated }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // --- THIS IS THE NEW, SMART HANDLECHANGE FUNCTION ---
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'category') {
+      // If the user changes the category...
+      const newVehicleTypes = vehicleTypesByCategory[value] || [];
+      // Automatically select the FIRST vehicle type from the new list.
+      const defaultVehicleType = newVehicleTypes[0] || '';
+
+      setFormData(prev => ({ 
+        ...prev, 
+        category: value, 
+        vehicle_type: defaultVehicleType // This is the fix that prevents errors.
+      }));
+    } else {
+      // For any other field, just update its value.
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
   
   const handlePhoneChange = (e) => {
@@ -48,7 +67,6 @@ const NewVehicleForm = ({ onClose, onVehicleCreated }) => {
     setError('');
     setLoading(true);
 
-    // Combine phone numbers and create payload with correct field names
     const payload = {
       license_plate: formData.license_plate,
       category: formData.category,
@@ -81,15 +99,33 @@ const NewVehicleForm = ({ onClose, onVehicleCreated }) => {
         {/* Vehicle Details Section */}
         <h3 className="text-lg font-semibold border-b border-light-border dark:border-dark-border pb-1">Vehicle Details</h3>
         <input type="text" name="license_plate" placeholder="License Plate" value={formData.license_plate} onChange={handleChange} required className={inputClass} />
+        
+        {/* --- THIS IS THE UPDATED DROPDOWN SECTION --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <select name="category" value={formData.category} onChange={handleChange} required className={inputClass}>
             <option value="" disabled>Select License Category</option>
-            {vehicleLicenseCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            {vehicleCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
-          <input type="text" name="vehicle_type" placeholder="Vehicle Type (e.g., Toyota Yaris)" value={formData.vehicle_type} onChange={handleChange} required className={inputClass} />
+          
+          {/* This is now a dropdown that depends on the category selection */}
+          <select 
+            name="vehicle_type" 
+            value={formData.vehicle_type} 
+            onChange={handleChange} 
+            required 
+            disabled={!formData.category} 
+            className={`${inputClass} disabled:opacity-50`}
+          >
+            {/* If a category is selected, map over its specific types */}
+            {formData.category && vehicleTypesByCategory[formData.category].map(type => 
+              <option key={type} value={type}>{type}</option>
+            )}
+            {/* If no category is selected, show a disabled placeholder */}
+            {!formData.category && <option value="" disabled>Select a category first</option>}
+          </select>
         </div>
 
-        {/* --- UPDATED: "Customer's Details" --- */}
+        {/* Customer's Details Section (No changes here) */}
         <h3 className="text-lg font-semibold border-b border-light-border dark:border-dark-border pb-1 pt-3">Customer's Details</h3>
         <input type="text" name="customer_name" placeholder="Customer's Full Name" value={formData.customer_name} onChange={handleChange} required className={inputClass} />
         <PhoneNumberInput 

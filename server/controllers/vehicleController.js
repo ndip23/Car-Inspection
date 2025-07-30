@@ -2,15 +2,16 @@
 import asyncHandler from 'express-async-handler';
 import Vehicle from '../models/Vehicle.js';
 import Inspection from '../models/Inspection.js';
-import { sendInspectionReminder as sendEmailReminder } from '../services/emailService.js';
-import { sendWhatsAppReminder } from '../services/whatsappService.js';
+// --- CORRECTED IMPORTS ---
+import { sendDueDateReminderEmail } from '../services/emailService.js';
+import { sendDueDateReminderWhatsApp } from '../services/whatsappService.js';
+import { sendDueDateReminderSms } from '../services/localSmsService.js';
 import { format } from 'date-fns';
 
 // @desc    Create a new vehicle
 // @route   POST /api/vehicles
 // @access  Private/Inspector
 const createVehicle = asyncHandler(async (req, res) => {
-  // --- UPDATED: Destructure the new "customer" fields ---
   const { 
     license_plate, 
     category, 
@@ -39,6 +40,7 @@ const createVehicle = asyncHandler(async (req, res) => {
 
   res.status(201).json(vehicle);
 });
+
 // @desc    Get all vehicles, with search
 // @route   GET /api/vehicles
 // @access  Private/Inspector
@@ -48,7 +50,7 @@ const getVehicles = asyncHandler(async (req, res) => {
     : {};
   
   const vehicles = await Vehicle.find({ ...keyword });
-  res.json(vehicles);
+  res.json(vehicles || []);
 });
 
 // @desc    Get vehicle by ID
@@ -73,41 +75,42 @@ const sendManualReminder = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error('Vehicle not found');
     }
-
     const latestInspection = await Inspection.findOne({ vehicle: vehicle._id }).sort({ date: -1 });
-
-    if (!latestInspection) {
-        res.status(404);
-        throw new Error('No inspection history found for this vehicle.');
-    }
-
-    if (!latestInspection.next_due_date) {
+    if (!latestInspection || !latestInspection.next_due_date) {
         res.status(400);
-        throw new Error('The latest inspection for this vehicle does not have a next due date.');
+        throw new Error('No valid inspection history found to send a reminder.');
     }
 
     let emailSuccess = false;
     let whatsappSuccess = false;
+    let smsSuccess = false;
     const { next_due_date } = latestInspection;
 
-    emailSuccess = await sendEmailReminder(
-        vehicle.owner_email,
-        vehicle.owner_name,
+    // --- CORRECTED SERVICE CALLS with CUSTOMER fields ---
+    emailSuccess = await sendDueDateReminderEmail(
+        vehicle.customer_email,
+        vehicle.customer_name,
         vehicle.license_plate,
         next_due_date
     );
 
-    if (vehicle.owner_whatsapp) {
-        const formattedDate = format(new Date(next_due_date), 'MMMM do, yyyy');
-        whatsappSuccess = await sendWhatsAppReminder(
-            vehicle.owner_whatsapp,
-            vehicle.owner_name,
+    smsSuccess = await sendDueDateReminderSms(
+        vehicle.customer_phone,
+        vehicle.customer_name,
+        vehicle.license_plate,
+        next_due_date
+    );
+
+    if (vehicle.customer_whatsapp) {
+        whatsappSuccess = await sendDueDateReminderWhatsApp(
+            vehicle.customer_whatsapp,
+            vehicle.customer_name,
             vehicle.license_plate,
-            formattedDate
+            next_due_date
         );
     }
 
-    if (emailSuccess || whatsappSuccess) {
+    if (emailSuccess || whatsappSuccess || smsSuccess) {
         res.json({ message: 'Manual reminder sent successfully.' });
     } else {
         res.status(500);

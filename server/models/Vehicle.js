@@ -3,12 +3,12 @@ import mongoose from 'mongoose';
 
 // --- NEW CATEGORY LIST ---
 const vehicleCategories = [
-    'Category A (Taxi/Driving School)',
-    'Category B (Private Cars)',
-    'Category B1 (Pickup/Van/Ambulance)',
-    'Category C (Minibus)',
-    'Category C+ (Grand Bus)',
-    'Category D (Trucks/Heavy Duty/Cargo Carriers)'
+    'Category A ',
+    'Category B',
+    'Category B1',
+    'Category C ',
+    'Category C+',
+    'Category D '
 ];
 
 const vehicleSchema = mongoose.Schema(

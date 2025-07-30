@@ -1,4 +1,6 @@
+// server/controllers/inspectionController.js
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 import Inspection from '../models/Inspection.js';
 import Vehicle from '../models/Vehicle.js';
 
@@ -19,7 +21,6 @@ import {
     sendPassedInspectionSms
 } from '../services/localSmsService.js';
 
-// This is the only controller needed for inspections now
 const createInspection = asyncHandler(async (req, res) => {
     const { vehicleId, result, notes, next_due_date } = req.body;
 
@@ -45,34 +46,33 @@ const createInspection = asyncHandler(async (req, res) => {
 
     const createdInspection = await inspection.save();
 
-    // --- FULLY AUTOMATIC IMMEDIATE MESSAGING ---
-    // These run in the background ("fire and forget") so the inspector gets a fast response.
+    // --- THIS IS THE CORRECTED MESSAGING LOGIC ---
+    // It now uses the correct 'customer_' field names from the vehicle object.
 
     // 1. Always send the "Welcome / In Progress" message.
     console.log(`[ACTION] Sending Welcome messages for ${vehicle.license_plate}`);
-    sendWelcomeEmail(vehicle.owner_email, vehicle.owner_name);
-    sendWelcomeSms(vehicle.owner_phone, vehicle.owner_name);
-    if (vehicle.owner_whatsapp) {
-        sendWelcomeWhatsApp(vehicle.owner_whatsapp, vehicle.owner_name);
+    sendWelcomeEmail(vehicle.customer_email, vehicle.customer_name);
+    sendWelcomeSms(vehicle.customer_phone, vehicle.customer_name);
+    if (vehicle.customer_whatsapp) {
+        sendWelcomeWhatsApp(vehicle.customer_whatsapp, vehicle.customer_name);
     }
 
     // 2. Send the appropriate "Result" message based on the outcome.
     if (createdInspection.result === 'pass') {
         console.log(`[ACTION] Sending PASSED messages for ${vehicle.license_plate}`);
-        sendPassedInspectionEmail(vehicle.owner_email, vehicle.owner_name, vehicle.license_plate, createdInspection.next_due_date);
-        sendPassedInspectionSms(vehicle.owner_phone, vehicle.owner_name, vehicle.license_plate, createdInspection.next_due_date);
-        if (vehicle.owner_whatsapp) {
-            sendPassedInspectionWhatsApp(vehicle.owner_whatsapp, vehicle.owner_name, vehicle.license_plate, createdInspection.next_due_date);
+        sendPassedInspectionEmail(vehicle.customer_email, vehicle.customer_name, vehicle.license_plate, createdInspection.next_due_date);
+        sendPassedInspectionSms(vehicle.customer_phone, vehicle.customer_name, vehicle.license_plate, createdInspection.next_due_date);
+        if (vehicle.customer_whatsapp) {
+            sendPassedInspectionWhatsApp(vehicle.customer_whatsapp, vehicle.customer_name, vehicle.license_plate, createdInspection.next_due_date);
         }
     } else { // if result is 'fail'
         console.log(`[ACTION] Sending FAILED messages for ${vehicle.license_plate}`);
-        sendFailedInspectionEmail(vehicle.owner_email, vehicle.owner_name, vehicle.license_plate);
-        sendFailedInspectionSms(vehicle.owner_phone, vehicle.owner_name, vehicle.license_plate);
-        if (vehicle.owner_whatsapp) {
-            sendFailedInspectionWhatsApp(vehicle.owner_whatsapp, vehicle.owner_name, vehicle.license_plate);
+        sendFailedInspectionEmail(vehicle.customer_email, vehicle.customer_name, vehicle.license_plate);
+        sendFailedInspectionSms(vehicle.customer_phone, vehicle.customer_name, vehicle.license_plate);
+        if (vehicle.customer_whatsapp) {
+            sendFailedInspectionWhatsApp(vehicle.customer_whatsapp, vehicle.customer_name, vehicle.license_plate);
         }
         
-        // We can still use this flag to ensure we don't accidentally re-send a fail notice if the record is ever edited.
         createdInspection.failNotificationSent = true;
         await createdInspection.save();
     }
@@ -81,8 +81,11 @@ const createInspection = asyncHandler(async (req, res) => {
     res.status(201).json(createdInspection);
 });
 
-
 const getInspectionsForVehicle = asyncHandler(async (req, res) => {
+    // This function is already correct from our previous fix.
+    if (!mongoose.Types.ObjectId.isValid(req.params.vehicleId)) {
+        return res.json([]); 
+    }
     const vehicleId = new mongoose.Types.ObjectId(req.params.vehicleId);
     const inspections = await Inspection.aggregate([
         { $match: { vehicle: vehicleId } },
@@ -99,7 +102,7 @@ const getInspectionsForVehicle = asyncHandler(async (req, res) => {
         },
         { $sort: { date: -1 } }
     ]);
-    res.json(inspections);
+    res.json(inspections || []);
 });
 
 export { createInspection, getInspectionsForVehicle };

@@ -49,10 +49,12 @@ const getVehicles = asyncHandler(async (req, res) => {
     ? { license_plate: { $regex: req.query.search, $options: 'i' } }
     : {};
   
-  const vehicles = await Vehicle.find({ ...keyword });
-  res.json(vehicles || []);
+  // This query is fine, but we will ensure it always returns an array.
+  const vehicles = await Vehicle.find({ ...keyword }).sort({ createdAt: -1 });
+  
+  res.json(vehicles || []); // This ensures you always get an array
 });
-
+ 
 // @desc    Get vehicle by ID
 // @route   GET /api/vehicles/:id
 // @access  Private/Inspector

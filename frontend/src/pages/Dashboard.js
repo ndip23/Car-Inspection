@@ -22,11 +22,13 @@ const Dashboard = () => {
         setLoading(true);
         fetchVehicles(searchTerm)
             .then(res => {
-                setVehicles(res.data);
+                // Defensive check: ensure the API response is an array before setting state.
+                setVehicles(Array.isArray(res.data) ? res.data : []);
             })
             .catch(err => {
                 console.error("Failed to fetch vehicles", err);
                 toast.error("Could not load vehicles.");
+                setVehicles([]); // Always fall back to a safe empty array on error.
             })
             .finally(() => setLoading(false));
     }, [searchTerm, refetch]);
@@ -53,6 +55,8 @@ const Dashboard = () => {
         }
     };
 
+    // Guard clause: Prevents the component from rendering until the user object is available.
+    // This stops the "Cannot read properties of null (reading 'role')" error.
     if (!user) {
         return <div className="text-center p-8">Loading user data...</div>;
     }
@@ -96,9 +100,7 @@ const Dashboard = () => {
                         type="text"
                         placeholder="Search by license plate..."
                         value={searchTerm}
-                        // --- THIS IS THE CORRECTED LINE ---
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        // ------------------------------------
                         className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                 </div>
@@ -109,7 +111,8 @@ const Dashboard = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {vehicles.length > 0 ? (
+                        {/* Defensive check: Ensure 'vehicles' is a valid array before accessing .length */}
+                        {Array.isArray(vehicles) && vehicles.length > 0 ? (
                             vehicles.map(vehicle => <VehicleCard key={vehicle._id} vehicle={vehicle} />)
                         ) : (
                             <div className="col-span-full text-center py-12 glass-card rounded-lg">

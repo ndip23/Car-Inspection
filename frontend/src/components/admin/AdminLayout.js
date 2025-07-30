@@ -1,7 +1,7 @@
 // frontend/src/components/admin/AdminLayout.js
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { FiGrid, FiUsers, FiTruck, FiTrendingUp, FiSliders } from 'react-icons/fi'; // --- IMPORT FiSliders ---
+import { FiGrid, FiUsers, FiTruck, FiTrendingUp, FiSliders, FiHeart } from 'react-icons/fi'; 
 import Navbar from '../layout/Navbar';
 
 const AdminLayout = () => {
@@ -35,6 +35,9 @@ const AdminLayout = () => {
                             {/* --- ADD THE SETTINGS LINK --- */}
                             <NavLink to="/admin/settings" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${getLinkClass('/admin/settings')}`}>
                                 <FiSliders /><span>System Settings</span>
+                            </NavLink>
+                            <NavLink to="/admin/customer-reports" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${getLinkClass('/admin/customer-reports')}`}>
+                                <FiHeart /><span>Customer Reports</span>
                             </NavLink>
                         </nav>
                     </div>

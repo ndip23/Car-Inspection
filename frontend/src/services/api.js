@@ -54,3 +54,5 @@ export const fetchInspectorPerformance = () => API.get('/admin/performance');
 export const fetchSettings = () => API.get('/settings');
 export const updateSettings = (settingsData) => API.put('/settings', settingsData);
 export const sendAllPendingReminders = () => API.post('/notifications/send-all');
+export const fetchLapsedCustomers = () => API.get('/admin/reports/lapsed-customers');
+export const fetchLoyalCustomers = () => API.get('/admin/reports/loyal-customers');

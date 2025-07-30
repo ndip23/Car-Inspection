@@ -4,7 +4,7 @@ import User from '../models/User.js';
 import Vehicle from '../models/Vehicle.js';
 import Inspection from '../models/Inspection.js';
 import Notification from '../models/Notification.js';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, parseISO } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, parseISO, subYears } from 'date-fns';
 
 // @desc    Get admin dashboard statistics
 // @route   GET /api/admin/stats
@@ -252,6 +252,100 @@ const sendAllPendingReminders = asyncHandler(async (req, res) => {
         total: pendingNotifications.length
     });
 });
+// @desc    Get lapsed customers (vehicles not seen in 2 years)
+// @route   GET /api/admin/reports/lapsed-customers
+// @access  Private/Admin
+const getLapsedCustomersReport = asyncHandler(async (req, res) => {
+    // 1. Define the cutoff date: exactly 2 years ago from today.
+    const twoYearsAgo = subYears(new Date(), 2);
+
+    const lapsedVehicles = await Inspection.aggregate([
+        // Stage 1: Get the most recent inspection date for every vehicle.
+        {
+            $group: {
+                _id: "$vehicle",
+                lastInspectionDate: { $max: "$date" }
+            }
+        },
+        // Stage 2: Filter this list to only include vehicles whose last inspection
+        // was *before* our 2-year cutoff date.
+        {
+            $match: {
+                lastInspectionDate: { $lt: twoYearsAgo }
+            }
+        },
+        // Stage 3: Join with the vehicles collection to get owner details.
+        {
+            $lookup: {
+                from: "vehicles",
+                localField: "_id",
+                foreignField: "_id",
+                as: "vehicleDetails"
+            }
+        },
+        { $unwind: "$vehicleDetails" },
+        // Stage 4: Sort by the oldest last inspection date.
+        { $sort: { lastInspectionDate: 1 } },
+        // Stage 5: Format the output.
+        {
+            $project: {
+                _id: 0,
+                vehicleId: "$vehicleDetails._id",
+                license_plate: "$vehicleDetails.license_plate",
+                owner_name: "$vehicleDetails.owner_name",
+                owner_phone: "$vehicleDetails.owner_phone",
+                owner_email: "$vehicleDetails.owner_email",
+                lastInspectionDate: 1,
+            }
+        }
+    ]);
+
+    res.json(lapsedVehicles);
+});
+
+// @desc    Get loyal customers (vehicles with the most inspections)
+// @route   GET /api/admin/reports/loyal-customers
+// @access  Private/Admin
+const getLoyalCustomersReport = asyncHandler(async (req, res) => {
+    const loyalVehicles = await Inspection.aggregate([
+        // Stage 1: Group by vehicle and count the number of inspections for each.
+        {
+            $group: {
+                _id: "$vehicle",
+                inspectionCount: { $sum: 1 }
+            }
+        },
+        // Stage 2: Sort by the highest count first.
+        { $sort: { inspectionCount: -1 } },
+        // Stage 3: Limit to the top 20 most loyal customers.
+        { $limit: 20 },
+        // Stage 4: Join with the vehicles collection to get owner details.
+        {
+            $lookup: {
+                from: "vehicles",
+                localField: "_id",
+                foreignField: "_id",
+                as: "vehicleDetails"
+            }
+        },
+        { $unwind: "$vehicleDetails" },
+        // Stage 5: Format the output.
+        {
+            $project: {
+                _id: 0,
+                vehicleId: "$vehicleDetails._id",
+                license_plate: "$vehicleDetails.license_plate",
+                owner_name: "$vehicleDetails.owner_name",
+                owner_phone: "$vehicleDetails.owner_phone",
+                owner_email: "$vehicleDetails.owner_email",
+                inspectionCount: 1,
+            }
+        }
+    ]);
+
+    res.json(loyalVehicles);
+});
+
 
 
 export { 
@@ -264,5 +358,7 @@ export {
     adminUpdateVehicle,
     adminDeleteVehicle,
     getInspectorPerformance,
-    sendAllPendingReminders
+    sendAllPendingReminders, 
+    getLapsedCustomersReport,
+    getLoyalCustomersReport
 };

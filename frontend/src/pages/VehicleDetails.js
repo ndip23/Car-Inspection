@@ -19,12 +19,15 @@ const VehicleDetails = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const vehicleData = await fetchVehicleById(vehicleId);
-        const inspectionsData = await fetchInspectionsByVehicleId(vehicleId);
-        setVehicle(vehicleData);
-        setInspections(inspectionsData.sort((a, b) => new Date(b.date) - new Date(a.date)));
+        const [vehicleRes, inspectionsRes] = await Promise.all([
+          fetchVehicleById(vehicleId),
+          fetchInspectionsByVehicleId(vehicleId)
+        ]);
+        setVehicle(vehicleRes.data);
+        setInspections(inspectionsRes.data.sort((a, b) => new Date(b.date) - new Date(a.date)));
       } catch (error) {
         console.error("Failed to fetch data:", error);
+        toast.error("Failed to load vehicle details.");
       } finally {
         setLoading(false);
       }
@@ -64,7 +67,7 @@ const VehicleDetails = () => {
                 <div>
                     <h1 className="text-2xl font-bold">{vehicle.license_plate}</h1>
                     <p className="text-light-text-secondary dark:text-dark-text-secondary">
-                        ({vehicle.category} - {vehicle.vehicle_type})
+                        ({vehicle.category}) - {vehicle.vehicle_type}
                     </p>
                 </div>
             </div>
@@ -72,11 +75,12 @@ const VehicleDetails = () => {
             <div className="flex items-center gap-4">
                  <FiUser className="w-8 h-8 text-secondary"/>
                 <div>
-                    <h3 className="font-semibold">Owner Information</h3>
-                    <p>{vehicle.owner_name}</p>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{vehicle.owner_email}</p>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Phone: {vehicle.owner_phone}</p>
-                    {vehicle.owner_whatsapp && <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">WhatsApp: {vehicle.owner_whatsapp}</p>}
+                    {/* --- UPDATED to use "Customer" --- */}
+                    <h3 className="font-semibold">Customer Information</h3>
+                    <p>{vehicle.customer_name}</p>
+                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{vehicle.customer_email}</p>
+                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Phone: {vehicle.customer_phone}</p>
+                    {vehicle.customer_whatsapp && <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">WhatsApp: {vehicle.customer_whatsapp}</p>}
                 </div>
             </div>
         </div>
@@ -110,12 +114,9 @@ const VehicleDetails = () => {
                         <div className="flex-grow">
                             <div className="flex items-center gap-2 font-bold"><FiCalendar size={14}/> {format(new Date(insp.date), 'MM/dd/yyyy')}</div>
                             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">Next Due: {format(new Date(insp.next_due_date), 'MM/dd/yyyy')}</p>
-                            
-                            {/* --- THIS IS THE CORRECTED LINE --- */}
                             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
                                 Inspector: {insp.inspector?.name || 'N/A'}
                             </p>
-                            
                             <p className="mt-2">{insp.notes}</p>
                         </div>
                         <div className='flex items-center space-x-4 flex-shrink-0'>

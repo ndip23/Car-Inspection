@@ -9,9 +9,9 @@ const VehicleCard = ({ vehicle }) => (
                 <h3 className="text-xl font-bold text-primary">{vehicle.license_plate}</h3>
                 <span className="text-xs bg-light-bg dark:bg-dark-bg px-2 py-1 rounded-full font-semibold">{vehicle.category}</span>
             </div>
-            {/* REMOVED: vehicle.make is no longer here */}
             <p className="font-semibold mt-2">{vehicle.vehicle_type}</p>
-            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">{vehicle.owner_name}</p>
+            {/* --- UPDATED to use customer_name --- */}
+            <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">{vehicle.customer_name}</p>
         </div>
     </Link>
 );

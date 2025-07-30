@@ -32,6 +32,7 @@ import UserManagementPage from './pages/admin/UserManagementPage';
 //import VehicleDatabasePage from './pages/admin/VehicleDatabasePage';
 import InspectorPerformancePage from './pages/admin/InspectorPerformancePage';
 import SystemSettingsPage from './pages/admin/SystemSettingsPage';
+import CustomerReportsPage from './pages/admin/CustomerReportsPage';
 
 function App() {
   const { loading } = useAuth();
@@ -52,6 +53,7 @@ function App() {
                  {/*<Route path="vehicles" element={<VehicleDatabasePage />} />*/}
                 <Route path="performance" element={<InspectorPerformancePage />} />
                 <Route path="settings" element={<SystemSettingsPage />} />
+                <Route path="customer-reports" element={<CustomerReportsPage />} />
             </Route>
         </Route>
         

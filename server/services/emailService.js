@@ -1,44 +1,59 @@
 // server/services/emailService.js
 import nodemailer from 'nodemailer';
 import { format } from 'date-fns';
+import Setting from '../models/Setting.js'; // Import the Setting model
 
-// UPDATED: The transport configuration is now more robust
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
     port: parseInt(process.env.EMAIL_PORT, 10),
     secure: process.env.EMAIL_SECURE === 'true',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    // --- THIS IS THE FIX ---
-    // Add a DNS timeout to prevent the ECONNREFUSED error on some systems.
-    // This gives Node.js more time to correctly resolve smtp.gmail.com.
-    dnsTimeout: 30000 // 30 seconds
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
 });
 
-export const sendInspectionReminder = async (ownerEmail, ownerName, vehiclePlate, dueDate) => {
-    const formattedDate = format(new Date(dueDate), 'MMMM do, yyyy');
-
-    const mailOptions = {
-        from: process.env.EMAIL_FROM,
-        to: ownerEmail,
-        subject: `Upcoming Vehicle Inspection Reminder for ${vehiclePlate}`,
-        html: `
-            <p>Dear ${ownerName},</p>
-            <p>This is a friendly reminder that your vehicle with license plate <strong>${vehiclePlate}</strong> is due for its next technical inspection on <strong>${formattedDate}</strong>.</p>
-            <p>Please schedule your appointment with VisuTech soon.</p>
-            <p>Thank you,</p>
-            <p><strong>The VisuTech Team</strong></p>
-        `,
-    };
-
+const sendEmail = async (to, subject, html) => {
     try {
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Reminder email SENT VIA GMAIL to ${ownerEmail}`);
+        await transporter.sendMail({ from: process.env.EMAIL_FROM, to, subject, html });
+        console.log(`✅ Email sent successfully to ${to}`);
         return true;
     } catch (error) {
-        console.error(`❌ Error sending Gmail to ${ownerEmail}:`, error);
+        console.error(`❌ Error sending email to ${to}:`, error);
         return false;
     }
+};
+
+// Welcome and Failed messages are simple and can remain hardcoded for reliability
+export const sendWelcomeEmail = (to, ownerName) => {
+    const subject = "Welcome to VisuTech!";
+    const html = `<p>Dear ${ownerName},</p><p>Thank you for choosing VisuTech. Your vehicle is now being inspected and should be ready in approximately 20 minutes.</p>`;
+    return sendEmail(to, subject, html);
+};
+export const sendFailedInspectionEmail = (to, ownerName, licensePlate) => {
+    const subject = `Important: Inspection Result for ${licensePlate}`;
+    const html = `<p>Dear ${ownerName},</p><p>The technical inspection for your vehicle ${licensePlate} has unfortunately failed. Please consult with your inspector for details.</p>`;
+    return sendEmail(to, subject, html);
+};
+
+// --- THIS IS THE DYNAMIC FUNCTION ---
+export const sendDueDateReminderEmail = async (to, ownerName, licensePlate, dueDate) => {
+    // Fetch all settings at once for efficiency
+    const settings = await Setting.find({ key: { $in: ['emailReminderSubject', 'emailReminderBody'] } });
+    const subjectTemplate = settings.find(s => s.key === 'emailReminderSubject')?.value || "Reminder for {{vehiclePlate}}";
+    const bodyTemplate = settings.find(s => s.key === 'emailReminderBody')?.value || "<p>Dear {{ownerName}}, your inspection is due.</p>";
+
+    const formattedDate = format(new Date(dueDate), 'MMMM do, yyyy');
+
+    // Replace placeholders in the templates fetched from the database
+    const subject = subjectTemplate.replace('{{vehiclePlate}}', licensePlate);
+    const html = bodyTemplate
+        .replace(new RegExp('{{ownerName}}', 'g'), ownerName)
+        .replace(new RegExp('{{vehiclePlate}}', 'g'), licensePlate)
+        .replace(new RegExp('{{dueDate}}', 'g'), formattedDate);
+
+    return sendEmail(to, subject, html);
+};
+export const sendPassedInspectionEmail = (to, ownerName, licensePlate, nextDueDate) => {
+    const formattedDate = format(new Date(nextDueDate), 'MMMM do, yyyy');
+    const subject = `Congratulations: Your Vehicle Inspection Passed for ${licensePlate}`;
+    const html = `<p>Dear ${ownerName},</p><p>Great news! The technical inspection for your vehicle ${licensePlate} has passed. Your next inspection is due on <strong>${formattedDate}</strong>.</p><p>Thank you for choosing VisuTech.</p>`;
+    return sendEmail(to, subject, html);
 };

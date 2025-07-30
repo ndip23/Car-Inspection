@@ -3,6 +3,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import connectDB from './config/db.js';
+import startAutomaticReminders from './services/automaticReminderService.js';
 //import checkLicense from './middleware/licenseMiddleware.js';
 
 // --- MAIN STARTUP FUNCTION ---
@@ -28,6 +29,7 @@ const startServer = async () => {
 
     // Step 4: Create and configure the Express app.
     const app = express();
+    startAutomaticReminders();
     app.use(cors());
     app.use(express.json());
 

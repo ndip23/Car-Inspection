@@ -10,16 +10,15 @@ import { format } from 'date-fns';
 // @route   POST /api/vehicles
 // @access  Private/Inspector
 const createVehicle = asyncHandler(async (req, res) => {
-  // --- THIS IS THE CORRECTED SECTION ---
-  // We now correctly destructure ALL the fields sent from the frontend.
-  const {
-    license_plate,
-    category,
-    vehicle_type, // <-- This was missing
-    owner_name,
-    owner_phone,
-    owner_email,
-    owner_whatsapp, // <-- This was also missing
+  // --- UPDATED: Destructure the new "customer" fields ---
+  const { 
+    license_plate, 
+    category, 
+    vehicle_type, 
+    customer_name, 
+    customer_phone, 
+    customer_email,
+    customer_whatsapp
   } = req.body;
 
   const vehicleExists = await Vehicle.findOne({ license_plate });
@@ -28,21 +27,18 @@ const createVehicle = asyncHandler(async (req, res) => {
     throw new Error('Vehicle with this license plate already exists');
   }
 
-  // We now correctly pass ALL the fields to the create method.
   const vehicle = await Vehicle.create({
-    license_plate,
-    category,
-    vehicle_type, // <-- This was missing
-    owner_name,
-    owner_phone,
-    owner_email,
-    owner_whatsapp, // <-- This was also missing
+    license_plate, 
+    category, 
+    vehicle_type, 
+    customer_name, 
+    customer_phone, 
+    customer_email,
+    customer_whatsapp
   });
-  // ------------------------------------
 
   res.status(201).json(vehicle);
 });
-
 // @desc    Get all vehicles, with search
 // @route   GET /api/vehicles
 // @access  Private/Inspector

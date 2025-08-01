@@ -17,10 +17,14 @@ const Dashboard = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [sending, setSending] = useState(false);
 
-    // The useEffect hook now only depends on searchTerm.
-    // It runs once on initial load and whenever the user types in the search box.
+    // --- THIS IS THE ROBUST REFETCH LOGIC ---
+    // A simple counter. When we want to refetch data, we increment it.
+    const [refetchCounter, setRefetchCounter] = useState(0);
+
     useEffect(() => {
         setLoading(true);
+        // This effect will run on initial load, when the search term changes,
+        // AND when the refetchCounter changes.
         fetchVehicles(searchTerm)
             .then(res => {
                 setVehicles(Array.isArray(res.data) ? res.data : []);
@@ -31,14 +35,15 @@ const Dashboard = () => {
                 setVehicles([]);
             })
             .finally(() => setLoading(false));
-    }, [searchTerm]);
+    }, [searchTerm, refetchCounter]); // Dependencies are simple and clear
 
-    // This function now receives the new vehicle object as an argument.
-    const handleVehicleCreated = (newVehicle) => {
-        // We add the new vehicle to the beginning of our current 'vehicles' array.
-        // This provides an instant UI update without needing another API call.
-        setVehicles(prevVehicles => [newVehicle, ...prevVehicles]);
+    // This function is called after a new vehicle is successfully created.
+    const handleVehicleCreated = () => {
+        // We simply increment the counter. This will cause the useEffect
+        // hook to run again, fetching the fresh list of vehicles from the database.
+        setRefetchCounter(prev => prev + 1);
     };
+    // ------------------------------------------
 
     const handleSendAll = async () => {
         setSending(true);

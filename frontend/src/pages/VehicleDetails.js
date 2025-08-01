@@ -15,36 +15,22 @@ const VehicleDetails = () => {
   const [loading, setLoading] = useState(true);
   const [reminderLoading, setReminderLoading] = useState(false);
 
-  // --- THIS IS THE NEW, ROBUST DATA FETCHING LOGIC ---
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
       try {
-        // Fetch vehicle details first.
-        const vehicleRes = await fetchVehicleById(vehicleId);
-        setVehicle(vehicleRes.data);
-
-        // Only if the vehicle is found, fetch its inspections.
-        const inspectionsRes = await fetchInspectionsByVehicleId(vehicleId);
-        
-        // Defensive check: Ensure the response is an array before sorting and setting state.
-        if (Array.isArray(inspectionsRes.data)) {
-          setInspections(inspectionsRes.data.sort((a, b) => new Date(b.date) - new Date(a.date)));
-        } else {
-          setInspections([]); // Fallback to a safe empty array
-        }
-
+        setLoading(true);
+        const vehicleData = await fetchVehicleById(vehicleId);
+        const inspectionsData = await fetchInspectionsByVehicleId(vehicleId);
+        setVehicle(vehicleData);
+        setInspections(inspectionsData.sort((a, b) => new Date(b.date) - new Date(a.date)));
       } catch (error) {
         console.error("Failed to fetch data:", error);
-        toast.error(error.response?.data?.message || "Failed to load vehicle details.");
-        setVehicle(null); // Set vehicle to null on error to show "Vehicle not found"
       } finally {
         setLoading(false);
       }
     };
     loadData();
   }, [vehicleId]);
-  // --------------------------------------------------
 
   const handleSendReminder = async () => {
     setReminderLoading(true);
@@ -60,25 +46,15 @@ const VehicleDetails = () => {
   };
 
   if (loading) return <p className='text-center'>Loading vehicle details...</p>;
-  
-  // This check now correctly handles the error state.
-  if (!vehicle) {
-    return (
-        <div>
-            <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
-                <FiArrowLeft /> Back to Dashboard
-            </Link>
-            <p className='text-center mt-8'>Vehicle not found.</p>
-        </div>
-    );
-  }
+  if (!vehicle) return <p className='text-center'>Vehicle not found.</p>;
   
   const getStatusChip = (result) => (result === 'pass' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400');
 
   return (
     <div className="space-y-4">
       <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
-        <FiArrowLeft /> Back to Dashboard
+        <FiArrowLeft />
+        Back to Dashboard
       </Link>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -88,7 +64,7 @@ const VehicleDetails = () => {
                 <div>
                     <h1 className="text-2xl font-bold">{vehicle.license_plate}</h1>
                     <p className="text-light-text-secondary dark:text-dark-text-secondary">
-                        ({vehicle.category}) - {vehicle.vehicle_type}
+                        ({vehicle.category} - {vehicle.vehicle_type})
                     </p>
                 </div>
             </div>
@@ -96,11 +72,11 @@ const VehicleDetails = () => {
             <div className="flex items-center gap-4">
                  <FiUser className="w-8 h-8 text-secondary"/>
                 <div>
-                    <h3 className="font-semibold">Customer Information</h3>
-                    <p>{vehicle.customer_name}</p>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{vehicle.customer_email}</p>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Phone: {vehicle.customer_phone}</p>
-                    {vehicle.customer_whatsapp && <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">WhatsApp: {vehicle.customer_whatsapp}</p>}
+                    <h3 className="font-semibold">Owner Information</h3>
+                    <p>{vehicle.owner_name}</p>
+                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">{vehicle.owner_email}</p>
+                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">Phone: {vehicle.owner_phone}</p>
+                    {vehicle.owner_whatsapp && <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">WhatsApp: {vehicle.owner_whatsapp}</p>}
                 </div>
             </div>
         </div>
@@ -134,9 +110,12 @@ const VehicleDetails = () => {
                         <div className="flex-grow">
                             <div className="flex items-center gap-2 font-bold"><FiCalendar size={14}/> {format(new Date(insp.date), 'MM/dd/yyyy')}</div>
                             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">Next Due: {format(new Date(insp.next_due_date), 'MM/dd/yyyy')}</p>
+                            
+                            {/* --- THIS IS THE CORRECTED LINE --- */}
                             <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">
                                 Inspector: {insp.inspector?.name || 'N/A'}
                             </p>
+                            
                             <p className="mt-2">{insp.notes}</p>
                         </div>
                         <div className='flex items-center space-x-4 flex-shrink-0'>

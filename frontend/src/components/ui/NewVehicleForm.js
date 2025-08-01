@@ -5,12 +5,12 @@ import { FiSave } from 'react-icons/fi';
 import PhoneNumberInput from './PhoneNumberInput';
 
 const vehicleTypesByCategory = {
-    'Category A (Taxi/Driving School)': ['Taxi', 'Driving School Car'],
-    'Category B (Private Cars)': ['Sedan', 'SUV', 'Hatchback', 'Station Wagon', 'Coupe'],
-    'Category B1 (Pickup/Van/Ambulance)': ['Pickup', 'Van', 'Ambulance', 'Minivan'],
-    'Category C (Minibus)': ['Minibus (10-20 seats)'],
-    'Category C+ (Grand Bus)': ['Coach Bus (21+ seats)', 'City Bus'],
-    'Category D (Trucks/Heavy Duty)': ['Light Truck', 'Heavy Goods Truck', 'Dump Truck', 'Cargo Carrier']
+    'Category A ': ['Taxi', 'Driving School Car'],
+    'Category B ': ['Private Car'],
+    'Category B1 ': ['Pickup', 'Van', 'Ambulance', 'Minivan'],
+    'Category C ': ['Minibus '],
+    'Category C+ ': ['Grand Bus '],
+    'Category D': ['Light Truck', 'Heavy Goods Truck', 'Dump Truck', 'Cargo Carrier']
 };
 const vehicleCategories = Object.keys(vehicleTypesByCategory);
 

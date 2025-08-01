@@ -1,8 +1,8 @@
 // server/controllers/vehicleController.js
 import asyncHandler from 'express-async-handler';
+import mongoose from 'mongoose';
 import Vehicle from '../models/Vehicle.js';
 import Inspection from '../models/Inspection.js';
-// --- CORRECTED IMPORTS ---
 import { sendDueDateReminderEmail } from '../services/emailService.js';
 import { sendDueDateReminderWhatsApp } from '../services/whatsappService.js';
 import { sendDueDateReminderSms } from '../services/localSmsService.js';
@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 
 // @desc    Create a new vehicle
 // @route   POST /api/vehicles
-// @access  Private/Inspector
+// @access  Private
 const createVehicle = asyncHandler(async (req, res) => {
   const { 
     license_plate, 
@@ -43,82 +43,33 @@ const createVehicle = asyncHandler(async (req, res) => {
 
 // @desc    Get all vehicles, with search
 // @route   GET /api/vehicles
-// @access  Private/Inspector
+// @access  Private
 const getVehicles = asyncHandler(async (req, res) => {
   const keyword = req.query.search
     ? { license_plate: { $regex: req.query.search, $options: 'i' } }
     : {};
   
-  // This query is fine, but we will ensure it always returns an array.
   const vehicles = await Vehicle.find({ ...keyword }).sort({ createdAt: -1 });
   
-  res.json(vehicles || []); // This ensures you always get an array
+  res.status(200).json(vehicles || []);
 });
  
 // @desc    Get vehicle by ID
 // @route   GET /api/vehicles/:id
-// @access  Private/Inspector
+// @access  Private
 const getVehicleById = asyncHandler(async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        res.status(400); throw new Error('Invalid vehicle ID format.');
+    }
     const vehicle = await Vehicle.findById(req.params.id);
-    if(vehicle) {
+    if (vehicle) {
         res.json(vehicle);
     } else {
-        res.status(404);
-        throw new Error('Vehicle not found');
+        res.status(404); throw new Error('Vehicle not found.');
     }
 });
 
-// @desc    Manually send an inspection reminder for a vehicle
-// @route   POST /api/vehicles/:id/remind
-// @access  Private
-const sendManualReminder = asyncHandler(async (req, res) => {
-    const vehicle = await Vehicle.findById(req.params.id);
-    if (!vehicle) {
-        res.status(404);
-        throw new Error('Vehicle not found');
-    }
-    const latestInspection = await Inspection.findOne({ vehicle: vehicle._id }).sort({ date: -1 });
-    if (!latestInspection || !latestInspection.next_due_date) {
-        res.status(400);
-        throw new Error('No valid inspection history found to send a reminder.');
-    }
-
-    let emailSuccess = false;
-    let whatsappSuccess = false;
-    let smsSuccess = false;
-    const { next_due_date } = latestInspection;
-
-    // --- CORRECTED SERVICE CALLS with CUSTOMER fields ---
-    emailSuccess = await sendDueDateReminderEmail(
-        vehicle.customer_email,
-        vehicle.customer_name,
-        vehicle.license_plate,
-        next_due_date
-    );
-
-    smsSuccess = await sendDueDateReminderSms(
-        vehicle.customer_phone,
-        vehicle.customer_name,
-        vehicle.license_plate,
-        next_due_date
-    );
-
-    if (vehicle.customer_whatsapp) {
-        whatsappSuccess = await sendDueDateReminderWhatsApp(
-            vehicle.customer_whatsapp,
-            vehicle.customer_name,
-            vehicle.license_plate,
-            next_due_date
-        );
-    }
-
-    if (emailSuccess || whatsappSuccess || smsSuccess) {
-        res.json({ message: 'Manual reminder sent successfully.' });
-    } else {
-        res.status(500);
-        throw new Error('Failed to send reminders on all channels.');
-    }
-});
+// --- THIS IS THE MISSING FUNCTION, NOW CORRECTLY INCLUDED ---
 // @desc    Update a vehicle's customer details
 // @route   PUT /api/vehicles/:id/customer
 // @access  Private
@@ -135,17 +86,52 @@ const updateVehicleCustomer = asyncHandler(async (req, res) => {
         throw new Error('Vehicle not found');
     }
 
-    // Get the new customer details from the request body
     const { customer_name, customer_phone, customer_email, customer_whatsapp } = req.body;
 
-    // Update the fields
     vehicle.customer_name = customer_name || vehicle.customer_name;
     vehicle.customer_phone = customer_phone || vehicle.customer_phone;
     vehicle.customer_email = customer_email || vehicle.customer_email;
-    vehicle.customer_whatsapp = customer_whatsapp; // Allow setting it to empty
+    vehicle.customer_whatsapp = customer_whatsapp;
 
     const updatedVehicle = await vehicle.save();
     res.json(updatedVehicle);
 });
+// -------------------------------------------------------------
 
-export { createVehicle, getVehicles, getVehicleById, sendManualReminder, updateVehicleCustomer };
+// @desc    Manually send an inspection reminder for a vehicle
+// @route   POST /api/vehicles/:id/remind
+// @access  Private
+const sendManualReminder = asyncHandler(async (req, res) => {
+    const vehicle = await Vehicle.findById(req.params.id);
+    if (!vehicle) {
+        res.status(404); throw new Error('Vehicle not found');
+    }
+    const latestInspection = await Inspection.findOne({ vehicle: vehicle._id }).sort({ date: -1 });
+    if (!latestInspection || !latestInspection.next_due_date) {
+        res.status(400); throw new Error('No valid inspection history found to send a reminder.');
+    }
+
+    let emailSuccess = false, whatsappSuccess = false, smsSuccess = false;
+    const { next_due_date } = latestInspection;
+
+    emailSuccess = await sendDueDateReminderEmail(vehicle.customer_email, vehicle.customer_name, vehicle.license_plate, next_due_date);
+    smsSuccess = await sendDueDateReminderSms(vehicle.customer_phone, vehicle.customer_name, vehicle.license_plate, next_due_date);
+    if (vehicle.customer_whatsapp) {
+        whatsappSuccess = await sendDueDateReminderWhatsApp(vehicle.customer_whatsapp, vehicle.customer_name, vehicle.license_plate, next_due_date);
+    }
+
+    if (emailSuccess || whatsappSuccess || smsSuccess) {
+        res.json({ message: 'Manual reminder sent successfully.' });
+    } else {
+        res.status(500); throw new Error('Failed to send reminders on all channels.');
+    }
+});
+
+// Ensure all functions, including the new one, are exported
+export { 
+    createVehicle, 
+    getVehicles, 
+    getVehicleById, 
+    updateVehicleCustomer, 
+    sendManualReminder 
+};

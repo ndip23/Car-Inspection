@@ -51,9 +51,13 @@ const NewVehicleForm = ({ onClose, onVehicleCreated }) => {
       customer_whatsapp: formData.customer_whatsapp_number ? formData.customer_whatsapp_code + formData.customer_whatsapp_number : '',
     };
     try {
-      const { data: newVehicle } = await createVehicle(payload);
-      onVehicleCreated(newVehicle);
-      onClose();
+      // The API call returns the new vehicle data in `res.data`
+      const res = await createVehicle(payload);
+      
+      // Pass the newly created vehicle object back up to the Dashboard component
+      onVehicleCreated(res.data);
+      
+      onClose(); // Close the modal
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to register vehicle.');
     } finally { setLoading(false); }

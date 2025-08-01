@@ -56,3 +56,5 @@ export const updateSettings = (settingsData) => API.put('/settings', settingsDat
 export const sendAllPendingReminders = () => API.post('/notifications/send-all');
 export const fetchLapsedCustomers = () => API.get('/admin/reports/lapsed-customers');
 export const fetchLoyalCustomers = () => API.get('/admin/reports/loyal-customers');
+export const updateVehicleCustomer = (vehicleId, customerData) => 
+    API.put(`/vehicles/${vehicleId}/customer`, customerData).then(res => res.data);

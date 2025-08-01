@@ -119,5 +119,33 @@ const sendManualReminder = asyncHandler(async (req, res) => {
         throw new Error('Failed to send reminders on all channels.');
     }
 });
+// @desc    Update a vehicle's customer details
+// @route   PUT /api/vehicles/:id/customer
+// @access  Private
+const updateVehicleCustomer = asyncHandler(async (req, res) => {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        res.status(400);
+        throw new Error('Invalid vehicle ID format.');
+    }
+    
+    const vehicle = await Vehicle.findById(req.params.id);
 
-export { createVehicle, getVehicles, getVehicleById, sendManualReminder };
+    if (!vehicle) {
+        res.status(404);
+        throw new Error('Vehicle not found');
+    }
+
+    // Get the new customer details from the request body
+    const { customer_name, customer_phone, customer_email, customer_whatsapp } = req.body;
+
+    // Update the fields
+    vehicle.customer_name = customer_name || vehicle.customer_name;
+    vehicle.customer_phone = customer_phone || vehicle.customer_phone;
+    vehicle.customer_email = customer_email || vehicle.customer_email;
+    vehicle.customer_whatsapp = customer_whatsapp; // Allow setting it to empty
+
+    const updatedVehicle = await vehicle.save();
+    res.json(updatedVehicle);
+});
+
+export { createVehicle, getVehicles, getVehicleById, sendManualReminder, updateVehicleCustomer };

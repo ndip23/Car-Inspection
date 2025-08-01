@@ -8,9 +8,6 @@ import { sendDueDateReminderWhatsApp } from '../services/whatsappService.js';
 import { sendDueDateReminderSms } from '../services/localSmsService.js';
 import { format } from 'date-fns';
 
-// @desc    Create a new vehicle
-// @route   POST /api/vehicles
-// @access  Private
 const createVehicle = asyncHandler(async (req, res) => {
   const { 
     license_plate, 
@@ -41,9 +38,6 @@ const createVehicle = asyncHandler(async (req, res) => {
   res.status(201).json(vehicle);
 });
 
-// @desc    Get all vehicles, with search
-// @route   GET /api/vehicles
-// @access  Private
 const getVehicles = asyncHandler(async (req, res) => {
   const keyword = req.query.search
     ? { license_plate: { $regex: req.query.search, $options: 'i' } }
@@ -54,9 +48,6 @@ const getVehicles = asyncHandler(async (req, res) => {
   res.status(200).json(vehicles || []);
 });
  
-// @desc    Get vehicle by ID
-// @route   GET /api/vehicles/:id
-// @access  Private
 const getVehicleById = asyncHandler(async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
         res.status(400); throw new Error('Invalid vehicle ID format.');
@@ -69,38 +60,23 @@ const getVehicleById = asyncHandler(async (req, res) => {
     }
 });
 
-// --- THIS IS THE MISSING FUNCTION, NOW CORRECTLY INCLUDED ---
-// @desc    Update a vehicle's customer details
-// @route   PUT /api/vehicles/:id/customer
-// @access  Private
 const updateVehicleCustomer = asyncHandler(async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-        res.status(400);
-        throw new Error('Invalid vehicle ID format.');
+        res.status(400); throw new Error('Invalid vehicle ID format.');
     }
-    
     const vehicle = await Vehicle.findById(req.params.id);
-
     if (!vehicle) {
-        res.status(404);
-        throw new Error('Vehicle not found');
+        res.status(404); throw new Error('Vehicle not found');
     }
-
     const { customer_name, customer_phone, customer_email, customer_whatsapp } = req.body;
-
     vehicle.customer_name = customer_name || vehicle.customer_name;
     vehicle.customer_phone = customer_phone || vehicle.customer_phone;
     vehicle.customer_email = customer_email || vehicle.customer_email;
     vehicle.customer_whatsapp = customer_whatsapp;
-
     const updatedVehicle = await vehicle.save();
     res.json(updatedVehicle);
 });
-// -------------------------------------------------------------
 
-// @desc    Manually send an inspection reminder for a vehicle
-// @route   POST /api/vehicles/:id/remind
-// @access  Private
 const sendManualReminder = asyncHandler(async (req, res) => {
     const vehicle = await Vehicle.findById(req.params.id);
     if (!vehicle) {
@@ -127,11 +103,4 @@ const sendManualReminder = asyncHandler(async (req, res) => {
     }
 });
 
-// Ensure all functions, including the new one, are exported
-export { 
-    createVehicle, 
-    getVehicles, 
-    getVehicleById, 
-    updateVehicleCustomer, 
-    sendManualReminder 
-};
+export { createVehicle, getVehicles, getVehicleById, updateVehicleCustomer, sendManualReminder };

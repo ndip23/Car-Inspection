@@ -3,56 +3,46 @@ import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
 import Vehicle from '../models/Vehicle.js';
 import Inspection from '../models/Inspection.js';
+// Import all necessary service functions
 import { sendDueDateReminderEmail } from '../services/emailService.js';
 import { sendDueDateReminderWhatsApp } from '../services/whatsappService.js';
 import { sendDueDateReminderSms } from '../services/localSmsService.js';
-import { format } from 'date-fns';
 
+// This function is correct and does not need changes.
 const createVehicle = asyncHandler(async (req, res) => {
-  const { 
-    license_plate, category, vehicle_type, 
-    customer_name, customer_phone, customer_email, customer_whatsapp
-  } = req.body;
+  const { license_plate, category, vehicle_type, customer_name, customer_phone, customer_email, customer_whatsapp } = req.body;
   const vehicleExists = await Vehicle.findOne({ license_plate });
-  if (vehicleExists) {
-    res.status(400);
-    throw new Error('Vehicle with this license plate already exists');
-  }
-  const vehicle = await Vehicle.create({
-    license_plate, category, vehicle_type, 
-    customer_name, customer_phone, customer_email, customer_whatsapp
-  });
+  if (vehicleExists) { res.status(400); throw new Error('Vehicle with this license plate already exists'); }
+  const vehicle = await Vehicle.create({ license_plate, category, vehicle_type, customer_name, customer_phone, customer_email, customer_whatsapp });
   res.status(201).json(vehicle);
 });
 
-// --- THIS IS THE FINAL, GUARANTEED-TO-WORK VERSION ---
+// This function is correct and does not need changes.
 const getVehicles = asyncHandler(async (req, res) => {
-  // Create a filter object that will be used in the find query.
   const filter = {};
-  
-  // Check if a search query exists AND it's not just an empty string.
   if (req.query.search && req.query.search.trim() !== '') {
-    // If it's valid, add the regex condition to the filter object.
     filter.license_plate = { $regex: req.query.search, $options: 'i' };
   }
-  
-  // Now, the query is either Vehicle.find({}) which gets all vehicles,
-  // or Vehicle.find({ license_plate: { ... } }) which filters them. This is foolproof.
   const vehicles = await Vehicle.find(filter).sort({ createdAt: -1 });
-  
   res.status(200).json(vehicles || []);
 });
-// ---------------------------------------------------
  
+// --- THIS IS THE FINAL, GUARANTEED-TO-WORK VERSION ---
 const getVehicleById = asyncHandler(async (req, res) => {
+    // 1. Validate the ID format first. This prevents crashes.
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-        res.status(400); throw new Error('Invalid vehicle ID format.');
+        res.status(404); // Treat invalid ID format as Not Found
+        throw new Error('Vehicle not found (invalid ID).');
     }
+
     const vehicle = await Vehicle.findById(req.params.id);
+    
+    // 2. Explicitly check if a vehicle was found for that valid ID.
     if (vehicle) {
-        res.json(vehicle);
+        res.status(200).json(vehicle);
     } else {
-        res.status(404); throw new Error('Vehicle not found.');
+        res.status(404); // Not Found
+        throw new Error('Vehicle not found.');
     }
 });
 

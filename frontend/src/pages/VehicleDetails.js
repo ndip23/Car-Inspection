@@ -1,7 +1,7 @@
 // frontend/src/pages/VehicleDetails.js
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiPlus, FiDownload, FiTool, FiUser, FiCalendar, FiSend, FiArrowLeft, FiEdit } from 'react-icons/fi';
+import { FiPlus, FiDownload, FiTool, FiUser, FiCalendar, FiSend, FiArrowLeft, FiEdit, FiLoader } from 'react-icons/fi';
 import { fetchVehicleById, fetchInspectionsByVehicleId, sendManualReminder, updateVehicleCustomer } from '../services/api';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import InspectionCertificate from '../components/ui/InspectionCertificate';
@@ -16,33 +16,35 @@ const VehicleDetails = () => {
   const [inspections, setInspections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reminderLoading, setReminderLoading] = useState(false);
-  
-  // --- NEW STATE for the edit modal ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Your original, working useEffect logic for fetching data
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        // Using Promise.all for slightly more efficient parallel fetching
-        const [vehicleRes, inspectionsRes] = await Promise.all([
-          fetchVehicleById(vehicleId),
-          fetchInspectionsByVehicleId(vehicleId)
-        ]);
+        // Fetch vehicle details first. This is a critical step.
+        const vehicleRes = await fetchVehicleById(vehicleId);
         
-        // Defensive checks to ensure data exists before setting state
         if (vehicleRes && vehicleRes.data) {
-            setVehicle(vehicleRes.data);
-        }
-        if (inspectionsRes && Array.isArray(inspectionsRes.data)) {
+          setVehicle(vehicleRes.data);
+          
+          // Only if the vehicle was found, proceed to fetch its inspections.
+          const inspectionsRes = await fetchInspectionsByVehicleId(vehicleId);
+          
+          // Defensive check: Ensure the response is an array before sorting.
+          if (Array.isArray(inspectionsRes.data)) {
             setInspections(inspectionsRes.data.sort((a, b) => new Date(b.date) - new Date(a.date)));
+          } else {
+            setInspections([]); // Fallback to a safe empty array if data is not an array
+          }
+        } else {
+          // If vehicleRes or vehicleRes.data is null/undefined, set vehicle to null.
+          setVehicle(null);
         }
-
       } catch (error) {
         console.error("Failed to fetch data:", error);
         toast.error(error.response?.data?.message || "Failed to load vehicle details.");
-        setVehicle(null);
+        setVehicle(null); // Explicitly set vehicle to null on any API error.
       } finally {
         setLoading(false);
       }
@@ -63,11 +65,10 @@ const VehicleDetails = () => {
     }
   };
   
-  // --- NEW HANDLER for updating customer details ---
   const handleUpdateCustomer = async (customerData) => {
     try {
         const { data: updatedVehicle } = await updateVehicleCustomer(vehicleId, customerData);
-        setVehicle(updatedVehicle); // Update the state with the new vehicle data
+        setVehicle(updatedVehicle); // Instantly update the state with the new vehicle data
         toast.success('Customer details updated successfully!');
         setIsEditModalOpen(false); // Close the modal on success
     } catch (error) {
@@ -75,15 +76,22 @@ const VehicleDetails = () => {
     }
   };
 
-  if (loading) return <p className='text-center'>Loading vehicle details...</p>;
+  if (loading) {
+    return (
+        <div className="flex justify-center items-center h-64">
+            <FiLoader className="animate-spin text-primary text-4xl" />
+        </div>
+    );
+  }
   
+  // If after loading, the vehicle state is still null, it means it was not found.
   if (!vehicle) {
     return (
-        <div>
+        <div className="space-y-4">
             <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
                 <FiArrowLeft /> Back to Dashboard
             </Link>
-            <p className='text-center mt-8'>Vehicle not found.</p>
+            <p className='text-center text-xl mt-8'>Vehicle not found.</p>
         </div>
     );
   }
@@ -110,8 +118,6 @@ const VehicleDetails = () => {
                   </div>
               </div>
               <div className="border-t border-light-border dark:border-dark-border my-4"></div>
-              
-              {/* --- UPDATED CUSTOMER INFO SECTION --- */}
               <div className="space-y-2">
                   <div className="flex justify-between items-center">
                       <div className="flex items-center gap-4">
@@ -122,7 +128,6 @@ const VehicleDetails = () => {
                           <FiEdit className="text-secondary"/>
                       </button>
                   </div>
-                  {/* Correctly display 'customer_' fields */}
                   <div className="pl-12 text-sm">
                       <p className="font-bold">{vehicle.customer_name}</p>
                       <p className="text-light-text-secondary dark:text-dark-text-secondary">{vehicle.customer_email}</p>
@@ -173,9 +178,7 @@ const VehicleDetails = () => {
         </div>
       </div>
 
-      {/* --- NEW: The Modal for the Edit Form --- */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
-          {/* Ensure the form is only rendered when we have a vehicle to edit */}
           {vehicle && (
               <EditCustomerForm 
                   vehicle={vehicle}

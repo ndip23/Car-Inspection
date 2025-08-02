@@ -33,8 +33,8 @@ const ReportDocument = ({ data, period, summary }) => (
       
       <View style={styles.summarySection}>
         <View style={styles.summaryBox}><Text style={styles.summaryValue}>{summary.total}</Text><Text>Total Inspections</Text></View>
-        <View style={styles.summaryBox}><Text style={[styles.summaryValue, {color: '#10B981'}]}>{summary.passed}</Text><Text>Passed</Text></View>
-        <View style={styles.summaryBox}><Text style={[styles.summaryValue, {color: '#EF4444'}]}>{summary.failed}</Text><Text>Failed</Text></View>
+        <View style={styles.summaryBox}><Text style={[styles.summaryValue, {color: '#10B981'}]}>{summary.passed}</Text><Text>Accepted</Text></View>
+        <View style={styles.summaryBox}><Text style={[styles.summaryValue, {color: '#EF4444'}]}>{summary.failed}</Text><Text>Rejected</Text></View>
       </View>
 
       <View style={styles.table}>

@@ -7,38 +7,44 @@ const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
     const [notifications, setNotifications] = useState([]);
-    const { user, isAuthenticated } = useAuth(); // Depend on the user object as well
+    const { isAuthenticated } = useAuth();
 
     const getNotifications = useCallback(async () => {
         if (!isAuthenticated) {
-            setNotifications([]);
+            setNotifications([]); // Clear notifications if user logs out
             return;
         }
         try {
             const res = await fetchNotifications();
-            setNotifications(res.data);
+            // This is the key: we are updating the state, which forces a re-render
+            // for any component that uses this context.
+            setNotifications(Array.isArray(res.data) ? res.data : []);
         } catch (error) {
-            // Don't show an error toast here as it can be annoying on every page load.
-            // Console log is sufficient for debugging.
             console.error("Could not fetch notifications:", error.message);
+            setNotifications([]); // Set to empty array on error
         }
     }, [isAuthenticated]);
 
     useEffect(() => {
-        // This effect will now re-run whenever the user logs in or out.
+        // Fetch on initial load/login
         getNotifications();
 
+        // The event handler now simply calls the stable getNotifications function.
         const handleUpdate = () => {
+            console.log("NotificationContext heard 'notificationsUpdated' event. Refetching...");
             getNotifications();
         };
         
         window.addEventListener('notificationsUpdated', handleUpdate);
 
+        // Cleanup the event listener
         return () => {
             window.removeEventListener('notificationsUpdated', handleUpdate);
         };
-    }, [user, getNotifications]); // <-- Add 'user' as a dependency
+    }, [getNotifications]);
 
+    // The value provided is the live 'notifications' state array.
+    // The refetching mechanism is now handled entirely within this context.
     const value = { notifications };
 
     return (

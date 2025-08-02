@@ -21,9 +21,10 @@ const CustomerReportsPage = () => {
                 } else {
                     response = await fetchLapsedCustomers();
                 }
-                setReportData(response.data);
+                setReportData(Array.isArray(response.data) ? response.data : []);
             } catch (error) {
                 toast.error('Failed to load report data.');
+                setReportData([]);
             } finally {
                 setLoading(false);
             }
@@ -33,18 +34,16 @@ const CustomerReportsPage = () => {
 
     return (
         <div className="space-y-4">
-            <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
-                <FiArrowLeft /> Back to Dashboard
+            <Link to="/admin" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
+                <FiArrowLeft /> Back to Admin Dashboard
             </Link>
             <h1 className="text-3xl font-bold">Customer Reports</h1>
 
-            {/* Tab Navigation */}
             <div className="flex border-b border-light-border dark:border-dark-border">
                 <TabButton name="loyal" activeTab={activeTab} setActiveTab={setActiveTab} icon={<FiStar />}>Loyal Customers</TabButton>
                 <TabButton name="lapsed" activeTab={activeTab} setActiveTab={setActiveTab} icon={<FiUsers />}>Lapsed Customers</TabButton>
             </div>
 
-            {/* Report Content */}
             <div className="p-6 rounded-xl glass-card">
                 {loading ? (
                     <div className="flex justify-center items-center h-48"><FiLoader className="animate-spin text-primary text-3xl" /></div>
@@ -64,12 +63,12 @@ const TabButton = ({ name, activeTab, setActiveTab, children, icon }) => (
 
 const LoyalCustomersTable = ({ data }) => (
     <ReportTable
-        headers={['Rank', 'License Plate', 'Owner', 'Total Inspections']}
+        headers={['Rank', 'License Plate', 'Customer Name', 'Total Inspections']}
         rows={data.map((item, index) => (
             <tr key={item.vehicleId} className="border-b border-light-border/50 dark:border-dark-border/50">
                 <td className="p-3">#{index + 1}</td>
                 <td className="p-3 font-bold text-primary">{item.license_plate}</td>
-                <td className="p-3">{item.owner_name}</td>
+                <td className="p-3">{item.customer_name}</td>
                 <td className="p-3 font-semibold">{item.inspectionCount}</td>
             </tr>
         ))}
@@ -77,27 +76,29 @@ const LoyalCustomersTable = ({ data }) => (
     />
 );
 
+// --- THIS IS THE CORRECTED TABLE COMPONENT ---
 const LapsedCustomersTable = ({ data }) => (
     <ReportTable
-        headers={['License Plate', 'Owner', 'Contact Phone', 'Last Seen']}
+        headers={['License Plate', 'Customer Name', 'Contact Phone', 'Last Seen']}
         rows={data.map(item => (
             <tr key={item.vehicleId} className="border-b border-light-border/50 dark:border-dark-border/50">
                 <td className="p-3 font-bold text-primary">{item.license_plate}</td>
-                <td className="p-3">{item.owner_name}</td>
-                <td className="p-3">{item.owner_phone}</td>
+                <td className="p-3">{item.customer_name}</td>
+                <td className="p-3">{item.customer_phone}</td>
                 <td className="p-3 text-red-500">{format(new Date(item.lastInspectionDate), 'MMMM d, yyyy')}</td>
             </tr>
         ))}
         noDataMessage="No lapsed customers found (vehicles not seen in 2+ years)."
     />
 );
+// ---------------------------------------------
 
 const ReportTable = ({ headers, rows, noDataMessage }) => (
     <div className="overflow-x-auto">
         <table className="w-full text-left">
             <thead>
                 <tr className="border-b border-light-border dark:border-dark-border">
-                    {headers.map(h => <th key={h} className="p-3">{h}</th>)}
+                    {headers.map(h => <th key={h} className="p-3 text-sm font-semibold">{h}</th>)}
                 </tr>
             </thead>
             <tbody>

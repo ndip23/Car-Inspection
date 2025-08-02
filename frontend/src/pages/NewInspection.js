@@ -62,8 +62,8 @@ const NewInspection = () => {
                             onChange={(e) => setResult(e.target.value)}
                             className="w-full p-3 bg-light-bg/50 dark:bg-dark-bg/50 border border-light-border dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary"
                         >
-                            <option value="pass">Pass</option>
-                            <option value="fail">Fail</option>
+                            <option value="pass">Accepted</option>
+                            <option value="fail">Rejected</option>
                         </select>
                     </div>
 

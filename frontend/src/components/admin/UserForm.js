@@ -1,16 +1,19 @@
 // frontend/src/components/admin/UserForm.js
 import React, { useState } from 'react';
-import { FiSave } from 'react-icons/fi';
+import { FiSave, FiEye, FiEyeOff } from 'react-icons/fi'; // Import the eye icons
 
 const UserForm = ({ initialData, onSubmit, onCancel, loading }) => {
     const [formData, setFormData] = useState({
         name: initialData?.name || '',
         email: initialData?.email || '',
-        password: '', // Password is only for creating new users
+        password: '',
         role: initialData?.role || 'inspector',
     });
+    
+    // --- NEW STATE for password visibility ---
+    const [showPassword, setShowPassword] = useState(false);
 
-    const isEditing = !!initialData; // Determine if we are in "edit" mode
+    const isEditing = !!initialData;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -30,16 +33,35 @@ const UserForm = ({ initialData, onSubmit, onCancel, loading }) => {
                 {isEditing ? 'Edit User Role' : 'Create New User'}
             </h2>
             
-            {/* Fields for creating a new user */}
             {!isEditing && (
                 <>
                     <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required className={inputClass} />
                     <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required className={inputClass} />
-                    <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required className={inputClass} />
+                    
+                    {/* --- THIS IS THE UPDATED PASSWORD FIELD --- */}
+                    <div className="relative">
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            placeholder="Password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            required
+                            className={`${inputClass} pr-10`} // Add padding for the icon
+                        />
+                        <button
+                            type="button" // Important to prevent form submission
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-light-text-secondary dark:text-dark-text-secondary"
+                            title={showPassword ? "Hide password" : "Show password"}
+                        >
+                            {showPassword ? <FiEyeOff /> : <FiEye />}
+                        </button>
+                    </div>
+                    {/* ------------------------------------------- */}
                 </>
             )}
 
-            {/* Role selection is available for both creating and editing */}
             <div>
                 <label className="block text-sm font-medium mb-1">Role</label>
                 <select name="role" value={formData.role} onChange={handleChange} className={inputClass}>

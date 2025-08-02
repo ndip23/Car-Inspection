@@ -1,18 +1,41 @@
 // frontend/src/pages/admin/SystemSettingsPage.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchSettings, updateSettings, } from '../../services/api';
+import { fetchSettings, updateSettings } from '../../services/api';
 import toast from 'react-hot-toast';
-import { FiSave, FiArrowLeft } from 'react-icons/fi';
+import { FiSave, FiArrowLeft, FiLoader } from 'react-icons/fi';
 
-const defaultTemplates = {
-  whatsappReminder: "Dear {{1}}, This is a friendly reminder that your vehicle with license plate {{2}} is due for its next technical inspection on {{3}}. Please schedule your appointment with VisuTech soon. Thank you!",
+// Define the default values for all templates. This ensures the page
+// has something to display even before settings are saved in the database.
+const defaultSettings = {
+  welcomeMessage: "Welcome to VisuTech, {{customerName}}! Your vehicle is now being inspected and should be ready in approximately 20 minutes.",
+  passedMessage: "Congratulations, {{customerName}}! The inspection for your vehicle {{licensePlate}} has passed. Your next inspection is due on {{nextDueDate}}.",
+  failedMessage: "Dear {{customerName}}, the inspection for your vehicle {{licensePlate}} has unfortunately failed. Please see the inspector for details on the necessary repairs.",
+  whatsappReminder: "Reminder: The inspection for your vehicle {{licensePlate}} is due on {{dueDate}}. Please visit VisuTech to renew. -VisuTech",
   emailReminderSubject: "Upcoming Vehicle Inspection Reminder for {{vehiclePlate}}",
-  emailReminderBody: "<p>Dear {{ownerName}},</p><p>This is a friendly reminder that your vehicle with license plate <strong>{{vehiclePlate}}</strong> is due for its next technical inspection on <strong>{{dueDate}}</strong>.</p><p>Please schedule your appointment with VisuTech soon.</p><p>Thank you,</p><p><strong>The VisuTech Team</strong></p>"
+  emailReminderBody: "<p>Dear {{customerName}},</p><p>This is a reminder that your vehicle with license plate <strong>{{vehiclePlate}}</strong> is due for its next technical inspection on <strong>{{dueDate}}</strong>.</p><p>Thank you!</p>"
 };
 
+// A reusable component to keep our form clean
+const TemplateEditor = ({ title, name, value, onChange, placeholders, rows = 5 }) => (
+    <div className="p-6 rounded-xl glass-card">
+        <h3 className="text-xl font-semibold mb-2">{title}</h3>
+        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">
+            Available placeholders: {placeholders.map(p => <code key={p} className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{p}</code>)}
+        </p>
+        <textarea 
+            name={name}
+            value={value}
+            onChange={onChange}
+            rows={rows}
+            className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg font-mono text-sm"
+        />
+    </div>
+);
+
+
 const SystemSettingsPage = () => {
-    const [settings, setSettings] = useState(defaultTemplates);
+    const [settings, setSettings] = useState(defaultSettings);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -20,7 +43,8 @@ const SystemSettingsPage = () => {
         setLoading(true);
         fetchSettings()
             .then(res => {
-                setSettings(prev => ({ ...prev, ...res.data }));
+                // Merge fetched settings with our defaults to ensure all fields are present
+                setSettings(prev => ({ ...defaultSettings, ...res.data }));
             })
             .catch(() => toast.error('Failed to load settings.'))
             .finally(() => setLoading(false));
@@ -43,43 +67,70 @@ const SystemSettingsPage = () => {
         }
     };
 
-    if (loading) return <p>Loading settings...</p>;
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <FiLoader className="animate-spin text-primary text-4xl" />
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6">
-             <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
-                            <FiArrowLeft />
-                            Back to Dashboard
-                        </Link>
+        <div className="space-y-4">
+            <Link to="/admin" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
+                <FiArrowLeft />
+                Back to Admin Dashboard
+            </Link>
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">System Settings</h1>
                 <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-hover disabled:opacity-50">
                     <FiSave /> {saving ? 'Saving...' : 'Save All Changes'}
                 </button>
             </div>
+            
+            {/* --- NEW TEMPLATE SECTIONS ADDED --- */}
+            <TemplateEditor
+                title="Welcome Message Template (SMS/Email)"
+                name="welcomeMessage"
+                value={settings.welcomeMessage}
+                onChange={handleChange}
+                placeholders={['{{customerName}}']}
+            />
+            <TemplateEditor
+                title="Passed Inspection Template (SMS/Email)"
+                name="passedMessage"
+                value={settings.passedMessage}
+                onChange={handleChange}
+                placeholders={['{{customerName}}', '{{licensePlate}}', '{{nextDueDate}}']}
+            />
+            <TemplateEditor
+                title="Failed Inspection Template (SMS/Email)"
+                name="failedMessage"
+                value={settings.failedMessage}
+                onChange={handleChange}
+                placeholders={['{{customerName}}', '{{licensePlate}}']}
+            />
 
-            {/* WhatsApp Template Section */}
+            {/* Existing Reminder Sections */}
             <div className="p-6 rounded-xl glass-card">
-                <h3 className="text-xl font-semibold mb-2">WhatsApp Reminder Template</h3>
+                <h3 className="text-xl font-semibold mb-2">Due Date Reminder (SMS & WhatsApp)</h3>
                 <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">
-                    {/* --- THIS IS THE FIX --- */}
-                    {'Placeholders: `{{1}}` (Owner Name), `{{2}}` (License Plate), `{{3}}` (Due Date).'}
+                    Placeholders for WhatsApp must be positional (`{{1}}`, `{{2}}`, etc.). For SMS, placeholders will be replaced by name.
                 </p>
                 <textarea 
                     name="whatsappReminder"
                     value={settings.whatsappReminder}
                     onChange={handleChange}
                     rows="5"
-                    className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg"
+                    className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg font-mono text-sm"
                 />
             </div>
-
-            {/* Email Template Section */}
             <div className="p-6 rounded-xl glass-card">
-                <h3 className="text-xl font-semibold mb-2">Email Reminder Template</h3>
+                <h3 className="text-xl font-semibold mb-2">Due Date Reminder (Email)</h3>
                 <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">
-                    {/* --- THIS IS THE FIX --- */}
-                    {'Placeholders: `{{ownerName}}`, `{{vehiclePlate}}`, `{{dueDate}}`. HTML is allowed in the body.'}
+                    Placeholders: <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{'{{customerName}}'}</code>, 
+                    <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{'{{vehiclePlate}}'}</code>, 
+                    <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{'{{dueDate}}'}</code>. HTML is allowed in the body.
                 </p>
                 <label className="block font-medium mb-1">Subject</label>
                 <input 
@@ -87,7 +138,7 @@ const SystemSettingsPage = () => {
                     name="emailReminderSubject"
                     value={settings.emailReminderSubject}
                     onChange={handleChange}
-                    className="w-full p-3 mb-4 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg"
+                    className="w-full p-3 mb-4 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg font-mono text-sm"
                 />
                 <label className="block font-medium mb-1">Body (HTML)</label>
                 <textarea 
@@ -95,7 +146,7 @@ const SystemSettingsPage = () => {
                     value={settings.emailReminderBody}
                     onChange={handleChange}
                     rows="8"
-                    className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg"
+                    className="w-full p-3 bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-lg font-mono text-sm"
                 />
             </div>
         </div>

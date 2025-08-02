@@ -21,35 +21,42 @@ const sendSms = async (recipientNumber, message) => {
     }
 };
 
-export const sendWelcomeSms = (recipientNumber, ownerName) => {
-    const message = `Welcome to VisuTech, ${ownerName}! Your vehicle is being inspected and should be ready in approximately 20 minutes.`;
+// Helper to fetch a specific template with a safe fallback
+const getTemplate = async (key, fallback) => {
+    const setting = await Setting.findOne({ key: key });
+    return setting ? setting.value : fallback;
+};
+
+export const sendWelcomeSms = async (recipientNumber, ownerName) => {
+    const template = await getTemplate('welcomeMessage', "Welcome to VisuTech, {{customerName}}! Your vehicle is being inspected.");
+    const message = template.replace(new RegExp('{{customerName}}', 'g'), ownerName);
     return sendSms(recipientNumber, message);
 };
 
-export const sendFailedInspectionSms = (recipientNumber, ownerName, licensePlate) => {
-    const message = `Dear ${ownerName}, the inspection for your vehicle ${licensePlate} has failed. Please see the inspector for details on the necessary repairs.`;
+export const sendPassedInspectionSms = async (recipientNumber, ownerName, licensePlate, nextDueDate) => {
+    const template = await getTemplate('passedMessage', "Congratulations, {{customerName}}! Your vehicle {{licensePlate}} passed. Next inspection is due on {{nextDueDate}}.");
+    const formattedDate = format(new Date(nextDueDate), 'MMMM do, yyyy');
+    const message = template
+        .replace(new RegExp('{{customerName}}', 'g'), ownerName)
+        .replace(new RegExp('{{licensePlate}}', 'g'), licensePlate)
+        .replace(new RegExp('{{nextDueDate}}', 'g'), formattedDate);
     return sendSms(recipientNumber, message);
 };
 
-// --- THIS IS THE DYNAMIC FUNCTION ---
+export const sendFailedInspectionSms = async (recipientNumber, ownerName, licensePlate) => {
+    const template = await getTemplate('failedMessage', "Dear {{customerName}}, the inspection for your vehicle {{licensePlate}} has failed.");
+    const message = template
+        .replace(new RegExp('{{customerName}}', 'g'), ownerName)
+        .replace(new RegExp('{{licensePlate}}', 'g'), licensePlate);
+    return sendSms(recipientNumber, message);
+};
+
 export const sendDueDateReminderSms = async (recipientNumber, ownerName, licensePlate, dueDate) => {
-    // We will reuse the 'whatsappReminder' template for SMS for simplicity.
-    // You could create a separate 'smsReminderTemplate' setting if you wanted.
-    const setting = await Setting.findOne({ key: 'whatsappReminder' });
-    const templateFromDB = setting ? setting.value : "Reminder: Inspection for {{2}} is due on {{3}}.";
-    
+    const template = await getTemplate('whatsappReminder', "Reminder: Your vehicle {{2}} is due on {{3}}.");
     const formattedDate = format(new Date(dueDate), 'MMMM do, yyyy');
-
-    // Replace placeholders from the template fetched from the database
-    const message = templateFromDB
+    const message = template
         .replace('{{1}}', ownerName)
         .replace('{{2}}', licensePlate)
         .replace('{{3}}', formattedDate);
-
-    return sendSms(recipientNumber, message);
-};
-export const sendPassedInspectionSms = (recipientNumber, ownerName, licensePlate, nextDueDate) => {
-    const formattedDate = format(new Date(nextDueDate), 'MMMM do, yyyy');
-    const message = `Congratulations ${ownerName}! Your vehicle ${licensePlate} passed inspection. Next inspection is due on ${formattedDate}. -VisuTech`;
     return sendSms(recipientNumber, message);
 };

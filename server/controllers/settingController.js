@@ -47,14 +47,17 @@ const getSettings = asyncHandler(async (req, res) => {
 const updateSettings = asyncHandler(async (req, res) => {
     const settingsFromFrontend = req.body;
 
-    // --- ADD 'trialStartDate' to this list ---
+    // --- ADD THE NEW TEMPLATE KEYS TO THIS LIST ---
     const editableKeys = [
         'smsGatewayUrl', 
         'licenseStatus', 
-        'trialStartDate', // <-- ADD THIS
-        'whatsappReminder', 
+        'trialStartDate',
         'emailReminderSubject', 
-        'emailReminderBody'
+        'emailReminderBody',
+        'whatsappReminder', 
+        'welcomeMessage',
+        'passedMessage',
+        'failedMessage'
     ];
 
     try {

@@ -65,12 +65,12 @@ const Login = () => {
                     </button>
                 </div>
             </form>
-            <p className="text-center text-sm text-light-text-secondary dark:text-dark-text-secondary">
+            {/*<p className="text-center text-sm text-light-text-secondary dark:text-dark-text-secondary">
                 Don't have an account?{' '}
                 <Link to="/register" className="font-medium text-primary hover:underline">
                     Register here
                 </Link>
-            </p>
+            </p>*/}
         </div>
     </div>
   );

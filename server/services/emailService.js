@@ -1,7 +1,7 @@
 // server/services/emailService.js
 import nodemailer from 'nodemailer';
 import { format } from 'date-fns';
-import Setting from '../models/Setting.js'; // Import the Setting model
+import Setting from '../models/Setting.js';
 
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
@@ -21,39 +21,49 @@ const sendEmail = async (to, subject, html) => {
     }
 };
 
-// Welcome and Failed messages are simple and can remain hardcoded for reliability
-export const sendWelcomeEmail = (to, ownerName) => {
-    const subject = "Welcome to VisuTech!";
-    const html = `<p>Dear ${ownerName},</p><p>Thank you for choosing VisuTech. Your vehicle is now being inspected and should be ready in approximately 20 minutes.</p>`;
-    return sendEmail(to, subject, html);
+// Helper to fetch a specific template with a safe fallback
+const getTemplate = async (key, fallback) => {
+    const setting = await Setting.findOne({ key: key });
+    return setting ? setting.value : fallback;
 };
-export const sendFailedInspectionEmail = (to, ownerName, licensePlate) => {
-    const subject = `Important: Inspection Result for ${licensePlate}`;
-    const html = `<p>Dear ${ownerName},</p><p>The technical inspection for your vehicle ${licensePlate} has unfortunately failed. Please consult with your inspector for details.</p>`;
+
+export const sendWelcomeEmail = async (to, ownerName) => {
+    const template = await getTemplate('welcomeMessage', "Welcome to VisuTech, {{customerName}}! Your vehicle is being inspected.");
+    const subject = "Welcome to VisuTech!";
+    const html = `<p>${template.replace(new RegExp('{{customerName}}', 'g'), ownerName)}</p>`;
     return sendEmail(to, subject, html);
 };
 
-// --- THIS IS THE DYNAMIC FUNCTION ---
+export const sendPassedInspectionEmail = async (to, ownerName, licensePlate, nextDueDate) => {
+    const template = await getTemplate('passedMessage', "Congratulations, {{customerName}}! Your vehicle {{licensePlate}} passed. Next inspection is due on {{nextDueDate}}.");
+    const subject = `Inspection Passed for ${licensePlate}`;
+    const formattedDate = format(new Date(nextDueDate), 'MMMM do, yyyy');
+    const html = `<p>${template
+        .replace(new RegExp('{{customerName}}', 'g'), ownerName)
+        .replace(new RegExp('{{licensePlate}}', 'g'), licensePlate)
+        .replace(new RegExp('{{nextDueDate}}', 'g'), formattedDate)}</p>`;
+    return sendEmail(to, subject, html);
+};
+
+export const sendFailedInspectionEmail = async (to, ownerName, licensePlate) => {
+    const template = await getTemplate('failedMessage', "Dear {{customerName}}, the inspection for your vehicle {{licensePlate}} has failed.");
+    const subject = `Important: Inspection Result for ${licensePlate}`;
+    const html = `<p>${template
+        .replace(new RegExp('{{customerName}}', 'g'), ownerName)
+        .replace(new RegExp('{{licensePlate}}', 'g'), licensePlate)}</p>`;
+    return sendEmail(to, subject, html);
+};
+
 export const sendDueDateReminderEmail = async (to, ownerName, licensePlate, dueDate) => {
-    // Fetch all settings at once for efficiency
-    const settings = await Setting.find({ key: { $in: ['emailReminderSubject', 'emailReminderBody'] } });
-    const subjectTemplate = settings.find(s => s.key === 'emailReminderSubject')?.value || "Reminder for {{vehiclePlate}}";
-    const bodyTemplate = settings.find(s => s.key === 'emailReminderBody')?.value || "<p>Dear {{ownerName}}, your inspection is due.</p>";
+    const subjectTemplate = await getTemplate('emailReminderSubject', "Reminder for {{vehiclePlate}}");
+    const bodyTemplate = await getTemplate('emailReminderBody', "<p>Dear {{customerName}}, your inspection is due.</p>");
 
     const formattedDate = format(new Date(dueDate), 'MMMM do, yyyy');
-
-    // Replace placeholders in the templates fetched from the database
-    const subject = subjectTemplate.replace('{{vehiclePlate}}', licensePlate);
+    const subject = subjectTemplate.replace(new RegExp('{{vehiclePlate}}', 'g'), licensePlate);
     const html = bodyTemplate
-        .replace(new RegExp('{{ownerName}}', 'g'), ownerName)
+        .replace(new RegExp('{{customerName}}', 'g'), ownerName)
         .replace(new RegExp('{{vehiclePlate}}', 'g'), licensePlate)
         .replace(new RegExp('{{dueDate}}', 'g'), formattedDate);
 
-    return sendEmail(to, subject, html);
-};
-export const sendPassedInspectionEmail = (to, ownerName, licensePlate, nextDueDate) => {
-    const formattedDate = format(new Date(nextDueDate), 'MMMM do, yyyy');
-    const subject = `Congratulations: Your Vehicle Inspection Passed for ${licensePlate}`;
-    const html = `<p>Dear ${ownerName},</p><p>Great news! The technical inspection for your vehicle ${licensePlate} has passed. Your next inspection is due on <strong>${formattedDate}</strong>.</p><p>Thank you for choosing VisuTech.</p>`;
     return sendEmail(to, subject, html);
 };

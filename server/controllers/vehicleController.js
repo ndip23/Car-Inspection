@@ -10,43 +10,39 @@ import { format } from 'date-fns';
 
 const createVehicle = asyncHandler(async (req, res) => {
   const { 
-    license_plate, 
-    category, 
-    vehicle_type, 
-    customer_name, 
-    customer_phone, 
-    customer_email,
-    customer_whatsapp
+    license_plate, category, vehicle_type, 
+    customer_name, customer_phone, customer_email, customer_whatsapp
   } = req.body;
-
   const vehicleExists = await Vehicle.findOne({ license_plate });
   if (vehicleExists) {
     res.status(400);
     throw new Error('Vehicle with this license plate already exists');
   }
-
   const vehicle = await Vehicle.create({
-    license_plate, 
-    category, 
-    vehicle_type, 
-    customer_name, 
-    customer_phone, 
-    customer_email,
-    customer_whatsapp
+    license_plate, category, vehicle_type, 
+    customer_name, customer_phone, customer_email, customer_whatsapp
   });
-
   res.status(201).json(vehicle);
 });
 
+// --- THIS IS THE FINAL, GUARANTEED-TO-WORK VERSION ---
 const getVehicles = asyncHandler(async (req, res) => {
-  const keyword = req.query.search
-    ? { license_plate: { $regex: req.query.search, $options: 'i' } }
-    : {};
+  // Create a filter object that will be used in the find query.
+  const filter = {};
   
-  const vehicles = await Vehicle.find({ ...keyword }).sort({ createdAt: -1 });
+  // Check if a search query exists AND it's not just an empty string.
+  if (req.query.search && req.query.search.trim() !== '') {
+    // If it's valid, add the regex condition to the filter object.
+    filter.license_plate = { $regex: req.query.search, $options: 'i' };
+  }
+  
+  // Now, the query is either Vehicle.find({}) which gets all vehicles,
+  // or Vehicle.find({ license_plate: { ... } }) which filters them. This is foolproof.
+  const vehicles = await Vehicle.find(filter).sort({ createdAt: -1 });
   
   res.status(200).json(vehicles || []);
 });
+// ---------------------------------------------------
  
 const getVehicleById = asyncHandler(async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {

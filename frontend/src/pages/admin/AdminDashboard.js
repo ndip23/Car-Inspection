@@ -98,6 +98,10 @@ const AdminDashboard = () => {
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
+                                <FiArrowLeft />
+                                Back to Dashboard
+                            </Link>
                 <h1 className="text-3xl font-bold">Admin Dashboard</h1>
                 <div className="relative">
                     <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-light-text-secondary dark:text-dark-text-secondary"/>

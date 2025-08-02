@@ -29,17 +29,12 @@ const getInspectionReport = asyncHandler(async (req, res) => {
             endDate = endOfDay(now);
     }
 
-    // --- THIS IS THE CORRECTED QUERY ---
     const inspections = await Inspection.find({
         date: { $gte: startDate, $lte: endDate }
     })
-    // 1. Populate the 'vehicle' details.
-    .populate('vehicle', 'license_plate category vehicle_type')
-    // 2. CRITICAL FIX: Also populate the 'inspector' details, selecting only their name.
-    .populate('inspector', 'name')
+    .populate('vehicle', 'license_plate')
+    .populate('inspector', 'name') // This is the correct way to populate
     .sort({ date: -1 });
-    // ------------------------------------
-
     res.json(inspections);
 });
 

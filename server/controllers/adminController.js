@@ -9,23 +9,21 @@ import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, pa
 // @desc    Get admin dashboard statistics
 // @route   GET /api/admin/stats
 // @access  Private/Admin
+// @desc    Get admin dashboard statistics
+// @route   GET /api/admin/stats
+// @access  Private/Admin
 const getDashboardStats = asyncHandler(async (req, res) => {
     const { startDate: startDateQuery, endDate: endDateQuery } = req.query;
 
     const now = new Date();
+    // These functions (parseISO, startOfMonth, etc.) will now be defined.
     const startOfMonthFilter = startDateQuery ? parseISO(startDateQuery) : startOfMonth(now);
     const endOfMonthFilter = endDateQuery ? parseISO(endDateQuery) : endOfMonth(now);
 
-    // --- FIX FOR USER COUNT ---
-    // Get the developer email from environment variables.
     const devEmail = process.env.DEFAULT_DEV_EMAIL;
-    // Create a filter to exclude the developer account if the email is set.
     const userFilter = devEmail ? { email: { $ne: devEmail } } : {};
     
-    // Use the filter in the countDocuments query.
     const totalUsers = await User.countDocuments(userFilter);
-    // -------------------------
-
     const totalVehicles = await Vehicle.countDocuments();
     
     const inspectionsInRange = await Inspection.countDocuments({
@@ -39,18 +37,26 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     const startOfWeekFilter = startOfWeek(now, { weekStartsOn: 1 });
     const endOfWeekFilter = endOfWeek(now, { weekStartsOn: 1 });
     
-    // ... (rest of the chart logic is fine)
-    const inspectionsByDay = await Inspection.aggregate([/* ... */]);
-    const chartData = [ /* ... */ ];
+    const inspectionsByDay = await Inspection.aggregate([
+        { $match: { date: { $gte: startOfWeekFilter, $lte: endOfWeekFilter } } },
+        { $group: { _id: { $dayOfWeek: "$date" }, count: { $sum: 1 } } }
+    ]);
+    
+    const daysOfWeek = Array.from({ length: 7 }, (_, i) => (i + 2 > 7 ? 1 : i + 2)); // Mon=2, ..., Sun=1
+    const chartData = daysOfWeek.map(day => {
+        const match = inspectionsByDay.find(d => d._id === day);
+        return match ? match.count : 0;
+    });
     
     res.json({
-        totalUsers, // This value is now correct
+        totalUsers,
         totalVehicles,
         inspectionsInRange,
         passFailRatio: inspectionsInRange > 0 ? (passedInRange / inspectionsInRange) * 100 : 0,
         chartData
     });
 });
+
 
 
 // @desc    Get all users for admin

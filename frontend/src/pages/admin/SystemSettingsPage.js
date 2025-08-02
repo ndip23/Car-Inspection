@@ -75,9 +75,9 @@ const SystemSettingsPage = () => {
 
     return (
         <div className="space-y-4">
-            <Link to="/admin" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
+            <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
                 <FiArrowLeft />
-                Back to Admin Dashboard
+                Back to Dashboard
             </Link>
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold">System Settings</h1>

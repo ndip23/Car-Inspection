@@ -11,26 +11,39 @@ import {
     adminUpdateVehicle,
     adminDeleteVehicle,
     getInspectorPerformance,
-    sendAllPendingReminders
+    getLapsedCustomersReport,
+    getLoyalCustomersReport
 } from '../controllers/adminController.js';
 
 const router = express.Router();
+
+// This middleware applies to ALL routes defined in this file
 router.use(protect, admin);
 
+// --- Main Admin Routes ---
 router.get('/stats', getDashboardStats);
 
-// User routes
-router.route('/users').get(getAllUsers).post(adminCreateUser);
+// --- User Management Routes ---
+router.route('/users')
+    .get(getAllUsers)
+    .post(adminCreateUser);
 router.put('/users/:id/role', updateUserRole);
 router.put('/users/:id/status', toggleUserStatus);
 
-// Vehicle routes
-router.route('/vehicles').get(getAllVehicles);
-router.route('/vehicles/:id').put(adminUpdateVehicle).delete(adminDeleteVehicle);
+// --- Vehicle Management Routes ---
+router.route('/vehicles')
+    .get(getAllVehicles);
+router.route('/vehicles/:id')
+    .put(adminUpdateVehicle)
+    .delete(adminDeleteVehicle);
 
-// --- ADD THE NEW PERFORMANCE ROUTE ---
+// --- Performance Report Route ---
 router.get('/performance', getInspectorPerformance);
-router.post('/notifications/send-all', sendAllPendingReminders);
 
+// --- THIS IS THE CORRECTED CUSTOMER REPORT ROUTES ---
+// The routes should be defined like this, matching the controller logic.
+router.get('/reports/lapsed-customers', getLapsedCustomersReport);
+router.get('/reports/loyal-customers', getLoyalCustomersReport);
+// ----------------------------------------------------
 
 export default router;

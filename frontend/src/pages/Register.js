@@ -43,7 +43,7 @@ const Register = () => {
 
             <div className="text-center">
                 <h1 className="text-3xl font-bold text-primary">Create Account</h1>
-                <p className="mt-2 text-light-text-secondary dark:text-dark-text-secondary">Join the VisuTech Platform</p>
+                <p className="mt-2 text-light-text-secondary dark:text-dark-text-secondary">Join the Harmony Inspection Platform</p>
             </div>
             <form className="space-y-4" onSubmit={handleSubmit}>
                 <div className="relative">

@@ -90,7 +90,7 @@ const ReportsPage = () => {
           <div className="flex-grow flex justify-end">
              <PDFDownloadLink
                 document={<ReportDocument data={reportData} period={periodTitle} summary={overallSummary} />}
-                fileName={`VisuTech_${period}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                fileName={`Harmony Inspection_${period}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
                 className="flex items-center gap-2 px-4 py-2 bg-secondary text-white font-semibold rounded-lg hover:bg-secondary-hover"
               >
                 {({ loading: pdfLoading }) => (pdfLoading ? 'Preparing...' : <><FiDownload/> Download PDF</>)}

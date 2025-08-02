@@ -63,7 +63,7 @@ const Navbar = () => {
     <header className="sticky top-0 z-50 glass-card">
       <div className="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
         <Link to="/" className="text-xl font-bold text-primary tracking-wider">
-          VisuTech
+          Harmony Inspection
         </Link>
         
         <div className="flex items-center space-x-2 sm:space-x-4">

@@ -26,7 +26,7 @@ const generateCertificate = asyncHandler(async (req, res) => {
 
   // --- PDF Content ---
   // Header
-  doc.fontSize(20).fillColor('#10B981').text('VisuTech', { align: 'center' });
+  doc.fontSize(20).fillColor('#10B981').text('Harmony Inspection', { align: 'center' });
   doc.fontSize(12).fillColor('#555').text('VEHICLE INSPECTION CERTIFICATE', { align: 'center' });
   doc.moveDown(2);
 

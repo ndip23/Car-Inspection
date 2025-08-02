@@ -50,11 +50,11 @@ const SystemSettingsPage = () => {
         setSettings(prev => ({ ...prev, [name]: value }));
     };
 
-    // --- THIS IS THE CORRECTED FUNCTION ---
+    // --- THIS IS THE FINAL, CORRECTED FUNCTION ---
     const handleSave = async () => {
         setSaving(true);
         try {
-            // It should simply send the entire 'settings' object to the backend.
+            // It simply sends the entire 'settings' object.
             await updateSettings(settings);
             toast.success('Settings saved successfully!');
         } catch (error) {
@@ -111,7 +111,7 @@ const SystemSettingsPage = () => {
             <div className="p-6 rounded-xl glass-card">
                 <h3 className="text-xl font-semibold mb-2">Due Date Reminder (SMS & WhatsApp)</h3>
                 <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">
-                    Placeholders for WhatsApp must be positional (`{{1}}`, `{{2}}`, etc.). For SMS, placeholders will be replaced by name.
+                    Placeholders for WhatsApp must be positional (`{'{{1}}'}`, `{'{{2}}'}`). For SMS, placeholders will be replaced by name.
                 </p>
                 <textarea 
                     name="whatsappReminder"
@@ -124,9 +124,9 @@ const SystemSettingsPage = () => {
             <div className="p-6 rounded-xl glass-card">
                 <h3 className="text-xl font-semibold mb-2">Due Date Reminder (Email)</h3>
                 <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">
-                    Placeholders: <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{'{{customerName}}'}</code>, 
-                    <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{'{{vehiclePlate}}'}</code>, 
-                    <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{'{{dueDate}}'}</code>. HTML is allowed in the body.
+                    Placeholders: <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{`{{customerName}}`}</code>, 
+                    <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{`{{vehiclePlate}}`}</code>, 
+                    <code className="bg-light-bg dark:bg-dark-bg p-1 rounded-md mx-1 font-mono">{`{{dueDate}}`}</code>. HTML is allowed in the body.
                 </p>
                 <label className="block font-medium mb-1">Subject</label>
                 <input 

@@ -42,7 +42,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-light-bg dark:bg-dark-bg">
         <div className="w-full max-w-md p-8 space-y-8 rounded-2xl glass-card">
             <div className="text-center">
-                <h1 className="text-4xl font-bold text-primary">VisuTech</h1>
+                <h1 className="text-4xl font-bold text-primary">Harmony</h1>
                 <p className="mt-2 text-light-text-secondary dark:text-dark-text-secondary">Car Inspection Management</p>
             </div>
             <form className="space-y-6" onSubmit={handleSubmit}>

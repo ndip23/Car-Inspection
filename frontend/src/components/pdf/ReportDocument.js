@@ -27,7 +27,7 @@ const ReportDocument = ({ data, period, summary }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
-        <Text style={styles.title}>VisuTech Inspection Report</Text>
+        <Text style={styles.title}>Harmony Inspection Report</Text>
         <Text style={styles.subtitle}>{period} - Generated on {format(new Date(), 'MM/dd/yyyy')}</Text>
       </View>
       

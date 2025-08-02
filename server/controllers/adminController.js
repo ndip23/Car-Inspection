@@ -173,28 +173,46 @@ const adminDeleteVehicle = asyncHandler(async (req, res) => {
     res.json({ message: 'Vehicle and all associated data have been removed.' });
 });
 
-// --- NEW FUNCTION TO ADD ---
 // @desc    Get inspector performance statistics
 // @route   GET /api/admin/performance
 // @access  Private/Admin
 const getInspectorPerformance = asyncHandler(async (req, res) => {
     const performance = await Inspection.aggregate([
+        // Stage 1: Use $lookup to join with the users collection.
+        // This is like a LEFT JOIN in SQL.
+        {
+            $lookup: {
+                from: "users", // The name of the users collection in MongoDB
+                localField: "inspector", // The field in the 'inspections' collection
+                foreignField: "_id", // The field in the 'users' collection
+                as: "inspectorDetails" // The name for the new array field that holds the joined user document
+            }
+        },
+        // Stage 2: Deconstruct the inspectorDetails array.
+        // If an inspection has an inspector that was deleted, this will filter it out.
+        // Use { preserveNullAndEmptyArrays: true } if you want to see "Unknown" inspectors.
+        { $unwind: "$inspectorDetails" },
+        // Stage 3: Group the documents by the inspector's name.
         {
             $group: {
-                _id: "$inspector_name",
-                totalInspections: { $sum: 1 },
-                passed: { $sum: { $cond: [{ $eq: ["$result", "pass"] }, 1, 0] } },
-                failed: { $sum: { $cond: [{ $eq: ["$result", "fail"] }, 1, 0] } },
+                _id: "$inspectorDetails.name", // Group by the actual user's name
+                totalInspections: { $sum: 1 }, // Count the total documents in each group
+                // Count how many in each group have the result 'accepted'
+                accepted: { $sum: { $cond: [{ $eq: ["$result", "accepted"] }, 1, 0] } },
+                // Count how many in each group have the result 'rejected'
+                rejected: { $sum: { $cond: [{ $eq: ["$result", "rejected"] }, 1, 0] } },
             },
         },
+        // Stage 4: Sort the results by the total number of inspections in descending order.
         { $sort: { totalInspections: -1 } },
+        // Stage 5: Reshape the output to be clean and user-friendly for the frontend.
         {
             $project: {
-                _id: 0,
-                inspectorName: "$_id",
-                totalInspections: 1,
-                passed: 1,
-                failed: 1,
+                _id: 0, // Exclude the default _id field
+                inspectorName: "$_id", // Rename _id to inspectorName
+                totalInspections: 1, // Include totalInspections
+                passed: "$accepted", // Rename accepted to passed
+                failed: "$rejected", // Rename rejected to failed
             }
         }
     ]);

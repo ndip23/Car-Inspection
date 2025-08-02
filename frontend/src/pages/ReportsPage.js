@@ -105,8 +105,8 @@ const ReportsPage = () => {
           <h2 className="text-2xl font-bold mb-4">{periodTitle}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 text-center">
             <div className="p-4 bg-light-bg dark:bg-dark-bg rounded-lg"><p className="text-2xl font-bold">{overallSummary.total}</p><p>Total</p></div>
-            <div className="p-4 bg-green-500/10 rounded-lg"><p className="text-2xl font-bold text-green-500">{overallSummary.passed}</p><p>Passed</p></div>
-            <div className="p-4 bg-red-500/10 rounded-lg"><p className="text-2xl font-bold text-red-500">{overallSummary.failed}</p><p>Failed</p></div>
+            <div className="p-4 bg-green-500/10 rounded-lg"><p className="text-2xl font-bold text-green-500">{overallSummary.passed}</p><p>Accepted</p></div>
+            <div className="p-4 bg-red-500/10 rounded-lg"><p className="text-2xl font-bold text-red-500">{overallSummary.failed}</p><p>Rejected</p></div>
           </div>
           
           {period === 'monthly' && groupedWeeklyData ? (
@@ -116,7 +116,7 @@ const ReportsPage = () => {
                 const weeklySummary = getSummary(weeklyData);
                 return (
                   <div key={weekKey}>
-                    <h3 className="text-lg font-bold mb-2">{weekKey} (Passed: {weeklySummary.passed}, Failed: {weeklySummary.failed})</h3>
+                    <h3 className="text-lg font-bold mb-2">{weekKey} (Accepted: {weeklySummary.passed}, Rejected: {weeklySummary.failed})</h3>
                     <div className="overflow-x-auto rounded-lg border border-light-border dark:border-dark-border">
                         <ReportTable data={weeklyData} />
                     </div>

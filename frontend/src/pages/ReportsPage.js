@@ -1,21 +1,20 @@
 // frontend/src/pages/ReportsPage.js
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // Import Link
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchReport } from '../services/api';
 import toast from 'react-hot-toast';
-import { FiDownload, FiLoader, FiArrowLeft } from 'react-icons/fi'; // Import FiArrowLeft
+import { FiDownload, FiLoader, FiArrowLeft } from 'react-icons/fi';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import ReportDocument from '../components/pdf/ReportDocument';
 import { format, getWeekOfMonth } from 'date-fns';
 
-// ... (groupDataByWeek function remains unchanged)
+// This helper function groups monthly data by the week number.
 const groupDataByWeek = (data) => {
     if (!data) return {};
     return data.reduce((acc, item) => {
         const date = new Date(item.date);
-        const weekNumber = getWeekOfMonth(date, { weekStartsOn: 1 });
+        const weekNumber = getWeekOfMonth(date, { weekStartsOn: 1 }); // Week starts on Monday
         const weekKey = `Week ${weekNumber}`;
-
         if (!acc[weekKey]) {
             acc[weekKey] = [];
         }
@@ -24,6 +23,33 @@ const groupDataByWeek = (data) => {
     }, {});
 };
 
+// This is a reusable component for displaying the report data in a table.
+const ReportTable = ({ data }) => (
+    <table className="w-full text-left">
+        <thead className="bg-light-bg dark:bg-dark-bg">
+            <tr>
+                <th className="p-3 text-sm font-semibold">Date</th>
+                <th className="p-3 text-sm font-semibold">License Plate</th>
+                <th className="p-3 text-sm font-semibold">Inspector</th>
+                <th className="p-3 text-sm font-semibold">Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            {data.map(item => (
+                <tr key={item._id} className="border-t border-light-border dark:border-dark-border">
+                    <td className="p-3 text-sm">{format(new Date(item.date), 'MM/dd/yy, HH:mm')}</td>
+                    <td className="p-3 text-sm">{item.vehicle?.license_plate || 'N/A'}</td>
+                    <td className="p-3 text-sm">{item.inspector?.name || 'Unknown'}</td>
+                    {/* The logic checks for 'pass' but displays the user-friendly label */}
+                    <td className={`p-3 font-bold text-sm ${item.result === 'pass' ? 'text-primary' : 'text-red-500'}`}>
+                        {item.result === 'pass' ? 'ACCEPTED' : 'REJECTED'}
+                    </td>
+                </tr>
+            ))}
+        </tbody>
+    </table>
+);
+
 
 const ReportsPage = () => {
   const [reportData, setReportData] = useState(null);
@@ -31,11 +57,15 @@ const ReportsPage = () => {
   const [period, setPeriod] = useState('');
   const [activeButton, setActiveButton] = useState('');
 
-  // ... (generateReport, getSummary, and other logic remains unchanged)
+  // Automatically generate the "Today" report when the page first loads.
+  useEffect(() => {
+    generateReport('daily');
+  }, []);
+
   const generateReport = async (reportPeriod) => {
     setLoading(true);
     setPeriod(reportPeriod);
-    setActiveButton(reportPeriod); // Set the active button style
+    setActiveButton(reportPeriod);
     setReportData(null);
     try {
       const { data } = await fetchReport(reportPeriod);
@@ -47,6 +77,7 @@ const ReportsPage = () => {
     }
   };
 
+  // This function's logic correctly checks for 'pass' and 'fail'.
   const getSummary = (data) => {
     if (!data) return { total: 0, passed: 0, failed: 0 };
     return {
@@ -63,21 +94,14 @@ const ReportsPage = () => {
   const buttonClass = (buttonPeriod) => 
     `px-4 py-2 font-semibold rounded-lg transition-colors ${activeButton === buttonPeriod ? 'bg-primary text-white' : 'bg-primary/20 text-primary hover:bg-primary/30'}`;
 
-
   return (
     <div className="space-y-4">
-      {/* --- NEW: Back to Dashboard Link --- */}
       <Link to="/" className="inline-flex items-center gap-2 text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-primary transition-colors">
-        <FiArrowLeft />
-        Back to Dashboard
+        <FiArrowLeft /> Back to Dashboard
       </Link>
-      
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Inspection Reports</h1>
       </div>
-      
-      {/* ... (rest of the component's JSX remains the same) ... */}
-      {/* Report Generation Controls */}
       <div className="p-6 rounded-xl glass-card flex flex-col md:flex-row items-center gap-4">
         <span className="font-semibold">Generate Report For:</span>
         <div className="flex items-center gap-2">
@@ -90,7 +114,7 @@ const ReportsPage = () => {
           <div className="flex-grow flex justify-end">
              <PDFDownloadLink
                 document={<ReportDocument data={reportData} period={periodTitle} summary={overallSummary} />}
-                fileName={`Harmony Inspection_${period}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                fileName={`Harmony Inpection_${period}_Report_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
                 className="flex items-center gap-2 px-4 py-2 bg-secondary text-white font-semibold rounded-lg hover:bg-secondary-hover"
               >
                 {({ loading: pdfLoading }) => (pdfLoading ? 'Preparing...' : <><FiDownload/> Download PDF</>)}
@@ -99,7 +123,6 @@ const ReportsPage = () => {
         )}
       </div>
 
-      {/* Report Display Area */}
       {reportData && (
         <div className="p-6 rounded-xl glass-card">
           <h2 className="text-2xl font-bold mb-4">{periodTitle}</h2>
@@ -134,28 +157,5 @@ const ReportsPage = () => {
     </div>
   );
 };
-// ... (ReportTable component remains unchanged)
-const ReportTable = ({ data }) => (
-    <table className="w-full text-left">
-        <thead className="bg-light-bg dark:bg-dark-bg">
-            <tr>
-                <th className="p-3">Date</th>
-                <th className="p-3">License Plate</th>
-                <th className="p-3">Inspector</th>
-                <th className="p-3">Result</th>
-            </tr>
-        </thead>
-        <tbody>
-            {data.map(item => (
-                <tr key={item._id} className="border-t border-light-border dark:border-dark-border">
-                    <td className="p-3">{format(new Date(item.date), 'MM/dd/yy, HH:mm')}</td>
-                    <td className="p-3">{item.vehicle?.license_plate || 'N/A'}</td>
-                    <td className="p-3">{item.inspector_name}</td>
-                    <td className={`p-3 font-bold ${item.result === 'pass' ? 'text-primary' : 'text-red-500'}`}>{item.result.toUpperCase()}</td>
-                </tr>
-            ))}
-        </tbody>
-    </table>
-);
 
 export default ReportsPage;

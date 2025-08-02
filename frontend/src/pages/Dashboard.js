@@ -65,11 +65,11 @@ const Dashboard = () => {
                     <h1 className="text-3xl font-bold">Vehicle Dashboard</h1>
                     {/* The complete, correct button group */}
                     <div className="flex items-center gap-2 w-full flex-wrap justify-center md:w-auto md:justify-end">
-                        {user && user.role === 'admin' && (
+                       {/* {user && user.role === 'admin' && (
                             <Link to="/admin" className="flex items-center justify-center space-x-2 bg-secondary/20 hover:bg-secondary/30 text-secondary font-bold py-2 px-4 rounded-lg transition duration-300">
                                 <FiShield /><span>Admin Panel</span>
                             </Link>
-                        )}
+                        )}*/}
                         <button onClick={handleSendAll} disabled={sending} className="flex items-center justify-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 disabled:opacity-50">
                             {sending ? <FiLoader className="animate-spin" /> : <FiSend />}<span>{sending ? 'Processing...' : 'Send All'}</span>
                         </button>

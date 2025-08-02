@@ -80,8 +80,8 @@ const InspectionCertificate = ({ vehicle, inspection }) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <View style={styles.header}>
-        <Text style={styles.title}>VisuTech</Text>
-        <Text style={styles.subtitle}>VEHICLE INSPECTION CERTIFICATE</Text>
+        <Text style={styles.title}>Harmony Vehicle Inspection</Text>
+        <Text style={styles.subtitle}>HARMONY VEHICLE INSPECTION CERTIFICATE</Text>
       </View>
 
       <View style={styles.section}>

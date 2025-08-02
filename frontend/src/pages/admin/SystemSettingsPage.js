@@ -6,10 +6,10 @@ import toast from 'react-hot-toast';
 import { FiSave, FiArrowLeft, FiLoader } from 'react-icons/fi';
 
 const defaultSettings = {
-  welcomeMessage: "Welcome to VisuTech, {{customerName}}! Your vehicle is now being inspected and should be ready in approximately 20 minutes.",
+  welcomeMessage: "Welcome to Harmony Inspection, {{customerName}}! Your vehicle is now being inspected and should be ready in approximately 20 minutes.",
   passedMessage: "Congratulations, {{customerName}}! The inspection for your vehicle {{licensePlate}} has passed. Your next inspection is due on {{nextDueDate}}.",
   failedMessage: "Dear {{customerName}}, the inspection for your vehicle {{licensePlate}} has unfortunately failed. Please see the inspector for details on the necessary repairs.",
-  whatsappReminder: "Reminder: The inspection for your vehicle {{2}} is due on {{3}}. Please visit VisuTech to renew. -VisuTech",
+  whatsappReminder: "Reminder: The inspection for your vehicle {{2}} is due on {{3}}. Please visit Harmony Inpection to renew. -VisuTech",
   emailReminderSubject: "Upcoming Vehicle Inspection Reminder for {{vehiclePlate}}",
   emailReminderBody: "<p>Dear {{customerName}},</p><p>This is a reminder that your vehicle with license plate <strong>{{vehiclePlate}}</strong> is due for its next technical inspection on <strong>{{dueDate}}</strong>.</p><p>Thank you!</p>"
 };

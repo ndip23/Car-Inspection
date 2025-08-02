@@ -32,8 +32,8 @@ const InspectorPerformancePage = () => {
                             <tr className="border-b border-light-border dark:border-dark-border">
                                 <th className="p-3 cursor-pointer select-none" onClick={() => requestSort('inspectorName')}> Inspector {getSortIcon('inspectorName')} </th>
                                 <th className="p-3 cursor-pointer select-none" onClick={() => requestSort('totalInspections')}> Total Inspections {getSortIcon('totalInspections')} </th>
-                                <th className="p-3 cursor-pointer select-none" onClick={() => requestSort('passed')}> Passed {getSortIcon('passed')} </th>
-                                <th className="p-3 cursor-pointer select-none" onClick={() => requestSort('failed')}> Failed {getSortIcon('failed')} </th>
+                                <th className="p-3 cursor-pointer select-none" onClick={() => requestSort('passed')}> Accepted {getSortIcon('passed')} </th>
+                                <th className="p-3 cursor-pointer select-none" onClick={() => requestSort('failed')}> Rejected {getSortIcon('failed')} </th>
                             </tr>
                         </thead>
                         <tbody>

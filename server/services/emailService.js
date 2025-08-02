@@ -28,8 +28,8 @@ const getTemplate = async (key, fallback) => {
 };
 
 export const sendWelcomeEmail = async (to, ownerName) => {
-    const template = await getTemplate('welcomeMessage', "Welcome to VisuTech, {{customerName}}! Your vehicle is being inspected.");
-    const subject = "Welcome to VisuTech!";
+    const template = await getTemplate('welcomeMessage', "Welcome to Harmony Inspection, {{customerName}}! Your vehicle is being inspected.");
+    const subject = "Welcome to Harmony Inspection!";
     const html = `<p>${template.replace(new RegExp('{{customerName}}', 'g'), ownerName)}</p>`;
     return sendEmail(to, subject, html);
 };

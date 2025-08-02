@@ -28,7 +28,7 @@ const getTemplate = async (key, fallback) => {
 };
 
 export const sendWelcomeSms = async (recipientNumber, ownerName) => {
-    const template = await getTemplate('welcomeMessage', "Welcome to VisuTech, {{customerName}}! Your vehicle is being inspected.");
+    const template = await getTemplate('welcomeMessage', "Welcome to Harmony Inpection, {{customerName}}! Your vehicle is being inspected.");
     const message = template.replace(new RegExp('{{customerName}}', 'g'), ownerName);
     return sendSms(recipientNumber, message);
 };

@@ -17,17 +17,14 @@ const getInspectionReport = asyncHandler(async (req, res) => {
             endDate = endOfDay(now);
             break;
         case 'weekly':
-            // Setting weekStartsOn: 1 makes Monday the first day of the week.
             startDate = startOfWeek(now, { weekStartsOn: 1 });
             endDate = endOfWeek(now, { weekStartsOn: 1 });
             break;
         case 'monthly':
             startDate = startOfMonth(now);
             endDate = endOfMonth(now);
-
             break;
         default:
-            // For safety, default to daily if the period is invalid.
             startDate = startOfDay(now);
             endDate = endOfDay(now);
     }
@@ -36,9 +33,9 @@ const getInspectionReport = asyncHandler(async (req, res) => {
     const inspections = await Inspection.find({
         date: { $gte: startDate, $lte: endDate }
     })
-    // 1. Populate the 'vehicle' field, selecting only the necessary sub-fields.
+    // 1. Populate the 'vehicle' details.
     .populate('vehicle', 'license_plate category vehicle_type')
-    // 2. Add a second populate call for the 'inspector' field, selecting only the 'name'.
+    // 2. CRITICAL FIX: Also populate the 'inspector' details, selecting only their name.
     .populate('inspector', 'name')
     .sort({ date: -1 });
     // ------------------------------------

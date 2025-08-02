@@ -5,18 +5,15 @@ import { fetchSettings, updateSettings } from '../../services/api';
 import toast from 'react-hot-toast';
 import { FiSave, FiArrowLeft, FiLoader } from 'react-icons/fi';
 
-// Define the default values for all templates. This ensures the page
-// has something to display even before settings are saved in the database.
 const defaultSettings = {
   welcomeMessage: "Welcome to VisuTech, {{customerName}}! Your vehicle is now being inspected and should be ready in approximately 20 minutes.",
   passedMessage: "Congratulations, {{customerName}}! The inspection for your vehicle {{licensePlate}} has passed. Your next inspection is due on {{nextDueDate}}.",
   failedMessage: "Dear {{customerName}}, the inspection for your vehicle {{licensePlate}} has unfortunately failed. Please see the inspector for details on the necessary repairs.",
-  whatsappReminder: "Reminder: The inspection for your vehicle {{licensePlate}} is due on {{dueDate}}. Please visit VisuTech to renew. -VisuTech",
+  whatsappReminder: "Reminder: The inspection for your vehicle {{2}} is due on {{3}}. Please visit VisuTech to renew. -VisuTech",
   emailReminderSubject: "Upcoming Vehicle Inspection Reminder for {{vehiclePlate}}",
   emailReminderBody: "<p>Dear {{customerName}},</p><p>This is a reminder that your vehicle with license plate <strong>{{vehiclePlate}}</strong> is due for its next technical inspection on <strong>{{dueDate}}</strong>.</p><p>Thank you!</p>"
 };
 
-// A reusable component to keep our form clean
 const TemplateEditor = ({ title, name, value, onChange, placeholders, rows = 5 }) => (
     <div className="p-6 rounded-xl glass-card">
         <h3 className="text-xl font-semibold mb-2">{title}</h3>
@@ -33,7 +30,6 @@ const TemplateEditor = ({ title, name, value, onChange, placeholders, rows = 5 }
     </div>
 );
 
-
 const SystemSettingsPage = () => {
     const [settings, setSettings] = useState(defaultSettings);
     const [loading, setLoading] = useState(true);
@@ -43,7 +39,6 @@ const SystemSettingsPage = () => {
         setLoading(true);
         fetchSettings()
             .then(res => {
-                // Merge fetched settings with our defaults to ensure all fields are present
                 setSettings(prev => ({ ...defaultSettings, ...res.data }));
             })
             .catch(() => toast.error('Failed to load settings.'))
@@ -55,9 +50,11 @@ const SystemSettingsPage = () => {
         setSettings(prev => ({ ...prev, [name]: value }));
     };
 
+    // --- THIS IS THE CORRECTED FUNCTION ---
     const handleSave = async () => {
         setSaving(true);
         try {
+            // It should simply send the entire 'settings' object to the backend.
             await updateSettings(settings);
             toast.success('Settings saved successfully!');
         } catch (error) {
@@ -66,6 +63,7 @@ const SystemSettingsPage = () => {
             setSaving(false);
         }
     };
+    // ------------------------------------
 
     if (loading) {
         return (
@@ -88,7 +86,6 @@ const SystemSettingsPage = () => {
                 </button>
             </div>
             
-            {/* --- NEW TEMPLATE SECTIONS ADDED --- */}
             <TemplateEditor
                 title="Welcome Message Template (SMS/Email)"
                 name="welcomeMessage"
@@ -111,7 +108,6 @@ const SystemSettingsPage = () => {
                 placeholders={['{{customerName}}', '{{licensePlate}}']}
             />
 
-            {/* Existing Reminder Sections */}
             <div className="p-6 rounded-xl glass-card">
                 <h3 className="text-xl font-semibold mb-2">Due Date Reminder (SMS & WhatsApp)</h3>
                 <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">

@@ -17,23 +17,31 @@ const getInspectionReport = asyncHandler(async (req, res) => {
             endDate = endOfDay(now);
             break;
         case 'weekly':
-            startDate = startOfWeek(now, { weekStartsOn: 1 }); // Monday as start of week
+            // Setting weekStartsOn: 1 makes Monday the first day of the week.
+            startDate = startOfWeek(now, { weekStartsOn: 1 });
             endDate = endOfWeek(now, { weekStartsOn: 1 });
             break;
         case 'monthly':
             startDate = startOfMonth(now);
             endDate = endOfMonth(now);
+
             break;
         default:
-            res.status(400);
-            throw new Error('Invalid report period specified.');
+            // For safety, default to daily if the period is invalid.
+            startDate = startOfDay(now);
+            endDate = endOfDay(now);
     }
 
+    // --- THIS IS THE CORRECTED QUERY ---
     const inspections = await Inspection.find({
         date: { $gte: startDate, $lte: endDate }
     })
+    // 1. Populate the 'vehicle' field, selecting only the necessary sub-fields.
     .populate('vehicle', 'license_plate category vehicle_type')
+    // 2. Add a second populate call for the 'inspector' field, selecting only the 'name'.
+    .populate('inspector', 'name')
     .sort({ date: -1 });
+    // ------------------------------------
 
     res.json(inspections);
 });

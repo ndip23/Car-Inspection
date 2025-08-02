@@ -198,9 +198,9 @@ const getInspectorPerformance = asyncHandler(async (req, res) => {
                 _id: "$inspectorDetails.name", // Group by the actual user's name
                 totalInspections: { $sum: 1 }, // Count the total documents in each group
                 // Count how many in each group have the result 'accepted'
-                accepted: { $sum: { $cond: [{ $eq: ["$result", "accepted"] }, 1, 0] } },
+                accepted: { $sum: { $cond: [{ $eq: ["$result", "pass"] }, 1, 0] } },
                 // Count how many in each group have the result 'rejected'
-                rejected: { $sum: { $cond: [{ $eq: ["$result", "rejected"] }, 1, 0] } },
+                rejected: { $sum: { $cond: [{ $eq: ["$result", "fail"] }, 1, 0] } },
             },
         },
         // Stage 4: Sort the results by the total number of inspections in descending order.

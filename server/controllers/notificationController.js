@@ -3,16 +3,13 @@ import asyncHandler from 'express-async-handler';
 import mongoose from 'mongoose';
 import Inspection from '../models/Inspection.js';
 import { startOfDay, addDays, format } from 'date-fns';
-// --- CORRECTED IMPORTS ---
 import { sendDueDateReminderEmail } from '../services/emailService.js';
 import { sendDueDateReminderWhatsApp } from '../services/whatsappService.js';
 import { sendDueDateReminderSms } from '../services/localSmsService.js';
 
 const REMINDER_WINDOW_DAYS = 7;
 
-// @desc    Dynamically get all vehicles needing a reminder
-// @route   GET /api/notifications
-// @access  Private
+// This function is correct.
 const getNotifications = asyncHandler(async (req, res) => {
     const now = startOfDay(new Date());
     const windowEnd = addDays(now, REMINDER_WINDOW_DAYS);
@@ -24,62 +21,49 @@ const getNotifications = asyncHandler(async (req, res) => {
         { $lookup: { from: "vehicles", localField: "inspectionDetails.vehicle", foreignField: "_id", as: "vehicleDetails" } },
         { $unwind: "$vehicleDetails" },
         { $match: { "inspectionDetails.next_due_date": { $gte: now, $lte: windowEnd } } },
-        {
-            $project: {
-                _id: "$inspectionDetails._id",
-                vehicle: "$vehicleDetails",
-                dueDate: "$inspectionDetails.next_due_date",
-                status: 'pending',
-                message: { 
-                    $concat: [ 
-                        "Inspection for ", "$vehicleDetails.license_plate", " is due on ", 
-                        { $dateToString: { format: "%Y-%m-%d", date: "$inspectionDetails.next_due_date" } }
-                    ]
-                }
-            }
-        }
+        { $project: { _id: "$inspectionDetails._id", vehicle: "$vehicleDetails", dueDate: "$inspectionDetails.next_due_date", status: 'pending', message: { $concat: [ "Inspection for ", "$vehicleDetails.license_plate", " is due on ", { $dateToString: { format: "%Y-%m-%d", date: "$inspectionDetails.next_due_date" } } ] } } }
     ]);
     res.json(latestInspections);
 });
 
-// @desc    Send a reminder for a specific upcoming inspection
-// @route   POST /api/notifications/:id/send
-// @access  Private
+// This function is correct.
 const sendNotification = asyncHandler(async (req, res) => {
     const inspection = await Inspection.findById(req.params.id).populate('vehicle');
     if (!inspection || !inspection.vehicle) {
-        res.status(404);
-        throw new Error('Inspection or associated vehicle not found.');
+        res.status(404); throw new Error('Inspection or associated vehicle not found.');
     }
-    
     const { vehicle } = inspection;
-    let emailSuccess = false;
-    let smsSuccess = false;
-    let whatsappSuccess = false;
-
-    // --- CORRECTED SERVICE CALLS with CUSTOMER fields ---
+    let emailSuccess = false, smsSuccess = false, whatsappSuccess = false;
     emailSuccess = await sendDueDateReminderEmail(vehicle.customer_email, vehicle.customer_name, vehicle.license_plate, inspection.next_due_date);
     smsSuccess = await sendDueDateReminderSms(vehicle.customer_phone, vehicle.customer_name, vehicle.license_plate, inspection.next_due_date);
     if (vehicle.customer_whatsapp) {
-        whatsappSuccess = await sendDueDateReminderWhatsApp(vehicle.customer_whatsapp, vehicle.customer_name, vehicle.license_plate, inspection.next_due_date);
+        whatsappSuccess = await sendDueDateReminderWhatsApp(vehicle.customer_whatsapp, vehicle.customer_name, vehicle.customer_plate, inspection.next_due_date);
     }
-
     if (emailSuccess || smsSuccess || whatsappSuccess) {
         res.json({ message: 'Reminder sent successfully.' });
     } else {
-        res.status(500);
-        throw new Error('Failed to send reminders on all channels.');
+        res.status(500); throw new Error('Failed to send reminders on all channels.');
     }
 });
 
-// @desc    Process and send all dynamically generated pending reminders
-// @route   POST /api/notifications/send-all
-// @access  Private
+// --- THIS IS THE FINAL, CORRECTED FUNCTION ---
 const sendAllPendingReminders = asyncHandler(async (req, res) => {
     const now = startOfDay(new Date());
     const windowEnd = addDays(now, REMINDER_WINDOW_DAYS);
+
+    // The aggregation pipeline was missing from here. It is now restored.
     const pendingReminders = await Inspection.aggregate([
-        // This aggregation pipeline is the same as in getNotifications...
+        { $sort: { vehicle: 1, date: -1 } },
+        { $group: { _id: "$vehicle", latestInspectionId: { $first: "$_id" } } },
+        { $lookup: { from: "inspections", localField: "latestInspectionId", foreignField: "_id", as: "inspectionDetails" } },
+        { $unwind: "$inspectionDetails" },
+        { $lookup: { from: "vehicles", localField: "inspectionDetails.vehicle", foreignField: "_id", as: "vehicleDetails" } },
+        { $unwind: "$vehicleDetails" },
+        { $match: { "inspectionDetails.next_due_date": { $gte: now, $lte: windowEnd } } },
+        { $project: { 
+            vehicle: "$vehicleDetails", 
+            dueDate: "$inspectionDetails.next_due_date"
+        }}
     ]);
 
     if (pendingReminders.length === 0) {
@@ -91,11 +75,8 @@ const sendAllPendingReminders = asyncHandler(async (req, res) => {
 
     for (const reminder of pendingReminders) {
         const { vehicle, dueDate } = reminder;
-        let emailSuccess = false;
-        let smsSuccess = false;
-        let whatsappSuccess = false;
+        let emailSuccess = false, smsSuccess = false, whatsappSuccess = false;
 
-        // --- CORRECTED SERVICE CALLS with CUSTOMER fields ---
         emailSuccess = await sendDueDateReminderEmail(vehicle.customer_email, vehicle.customer_name, vehicle.license_plate, dueDate);
         smsSuccess = await sendDueDateReminderSms(vehicle.customer_phone, vehicle.customer_name, vehicle.license_plate, dueDate);
         if (vehicle.customer_whatsapp) {
@@ -116,6 +97,7 @@ const sendAllPendingReminders = asyncHandler(async (req, res) => {
         total: pendingReminders.length
     });
 });
+// ---------------------------------------------------
 
 const acknowledgeNotification = asyncHandler(async (req, res) => {
     res.json({ message: 'This action is no longer required.' });

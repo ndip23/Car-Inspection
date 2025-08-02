@@ -15,33 +15,24 @@ const Dashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [refetch, setRefetch] = useState(false);
     const [sending, setSending] = useState(false);
-
-    // This is the simplest and most reliable way to trigger a data refetch.
-    const [refetchCounter, setRefetchCounter] = useState(0);
 
     useEffect(() => {
         setLoading(true);
-        // This effect runs on initial load, when the search term changes,
-        // and, most importantly, when the refetchCounter changes.
         fetchVehicles(searchTerm)
             .then(res => {
-                // Safety check: ensure the API response is always an array.
                 setVehicles(Array.isArray(res.data) ? res.data : []);
             })
             .catch(err => {
                 console.error("Failed to fetch vehicles", err);
-                toast.error("Could not load vehicles.");
-                setVehicles([]); // Fallback to a safe empty array on error.
+                setVehicles([]);
             })
             .finally(() => setLoading(false));
-    }, [searchTerm, refetchCounter]); // Dependencies are simple and clear.
+    }, [searchTerm, refetch]);
 
-    // This function is called after a new vehicle is successfully created.
     const handleVehicleCreated = () => {
-        // Incrementing the counter forces the useEffect hook to run again,
-        // fetching the new list of vehicles from the database. This is foolproof.
-        setRefetchCounter(prev => prev + 1);
+        setRefetch(prev => !prev);
     };
 
     const handleSendAll = async () => {
@@ -62,22 +53,13 @@ const Dashboard = () => {
         }
     };
 
-    // Guard clause: Prevents rendering until the user object is loaded.
-    if (!user) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <FiLoader className="animate-spin text-primary text-4xl" />
-            </div>
-        );
-    }
-
     return (
         <>
             <div className="space-y-6">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h1 className="text-3xl font-bold">Vehicle Dashboard</h1>
                     <div className="flex items-center gap-2 w-full flex-wrap justify-center md:w-auto md:justify-end">
-                        {user.role === 'admin' && (
+                        {user && user.role === 'admin' && (
                             <Link to="/admin" className="flex items-center justify-center space-x-2 bg-secondary/20 hover:bg-secondary/30 text-secondary font-bold py-2 px-4 rounded-lg transition duration-300">
                                 <FiShield />
                                 <span>Admin Panel</span>
@@ -85,36 +67,24 @@ const Dashboard = () => {
                         )}
                         <button onClick={handleSendAll} disabled={sending} className="flex items-center justify-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 disabled:opacity-50">
                             {sending ? <FiLoader className="animate-spin" /> : <FiSend />}
-                            <span>{sending ? 'Processing...' : 'Send All'}</span>
+                            <span>{sending ? 'Processing...' : 'Send All Reminders'}</span>
                         </button>
                         <Link to="/reports" className="flex items-center justify-center space-x-2 bg-secondary hover:bg-secondary-hover text-white font-bold py-2 px-4 rounded-lg transition duration-300">
                             <FiBarChart2 />
                             <span>Reports</span>
                         </Link>
-                        <button 
-                            onClick={() => setIsModalOpen(true)}
-                            className="flex items-center justify-center space-x-2 bg-primary hover:bg-primary-hover text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                        <button onClick={() => setIsModalOpen(true)} className="flex items-center justify-center space-x-2 bg-primary hover:bg-primary-hover text-white font-bold py-2 px-4 rounded-lg transition duration-300">
                             <FiPlus />
                             <span>Register Vehicle</span>
                         </button>
                     </div>
                 </div>
-
                 <div className="relative">
                     <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-light-text-secondary dark:text-dark-text-secondary" />
-                    <input
-                        type="text"
-                        placeholder="Search by license plate..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    <input type="text" placeholder="Search by license plate..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border rounded-lg py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary" />
                 </div>
-                
                 {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <FiLoader className="animate-spin text-primary text-4xl" />
-                    </div>
+                    <p className='text-center text-light-text-secondary dark:text-dark-text-secondary'>Loading vehicles...</p>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {Array.isArray(vehicles) && vehicles.length > 0 ? (
@@ -128,12 +98,8 @@ const Dashboard = () => {
                     </div>
                 )}
             </div>
-
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <NewVehicleForm 
-                    onClose={() => setIsModalOpen(false)}
-                    onVehicleCreated={handleVehicleCreated}
-                />
+                <NewVehicleForm onClose={() => setIsModalOpen(false)} onVehicleCreated={handleVehicleCreated} />
             </Modal>
         </>
     );
